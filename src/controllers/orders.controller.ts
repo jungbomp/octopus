@@ -38,9 +38,4 @@ export class OrdersController {
   loadFromLogiwa(@Body() logiwaOrderSearchDto: LogiwaOrderSearchDto): Promise<any> {
     return this.ordersService.loadFromLogiwa(logiwaOrderSearchDto);
   }
-
-  @Post('test')
-  testFunc(): Promise<any> {
-    return this.ordersService.testFunc();
-  }
 }
