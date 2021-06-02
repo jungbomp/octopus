@@ -361,8 +361,4 @@ export class OrdersService {
 
     await this.ordersRepository.update(criteria, partialEntity);
   }
-
-  async testFunc(): Promise<any> {
-    return this.updateEbayTrackingNo(StoreType.HAB, '154186357617-2159375506005', '9400111899560770389883', true);
-  }
 }
