@@ -10,18 +10,13 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
-  findAll(@Query('includeOrderItems') includeOrderItems: string): Promise<Orders[]> {
-    return this.ordersService.findAll(includeOrderItems.toLowerCase() === 'true');
+  findAll(@Query('includeOrderItems') includeOrderItems?: string, @Query('marketId') marketId?: string, @Query('orderDateStart') orderDateStart?: string, @Query('orderDateEnd') orderDateEnd?: string): Promise<Orders[]> {
+    return this.ordersService.findAll(includeOrderItems?.toLowerCase() === 'true', marketId && Number(marketId), orderDateStart, orderDateEnd);
   }
 
   @Get('un-processed')
   findUnProcessed(@Query('orderDateStart') orderDateStart: string, @Query('orderDateEnd') orderDateEnd: string, @Query('includeOrderItems') includeOrderItems: string): Promise<Orders[]> {
     return this.ordersService.findUnProcessed(orderDateStart, orderDateEnd, includeOrderItems?.toLowerCase() === 'true');
-  }
-
-  @Get(':ChannelOrderCode')
-  find(@Param('ChannelOrderCode') ChannelOrderCode: string, @Query('marketId') marketId: string, @Query('includeOrderItems') includeOrderItems: string): Promise<Orders[]> {
-    return this.ordersService.find(ChannelOrderCode, Number(marketId), includeOrderItems?.toLowerCase() === 'true');
   }
 
   @Get(':ChannelOrderCode/:marketId')

@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   Repository,
-  IsNull,
   Between,
   MoreThanOrEqual,
   LessThanOrEqual,
@@ -27,7 +26,7 @@ import { Market } from '../models/market.entity';
 import { OrderItem } from '../models/orderItem.entity';
 import { Orders } from '../models/orders.entity';
 import { User } from '../models/user.entity';
-import { Inventory } from 'src/models/inventory.entity';
+import { Inventory } from '../models/inventory.entity';
 
 @Injectable()
 export class OrdersService {
@@ -47,21 +46,35 @@ export class OrdersService {
     private readonly dateTimeUtil: DateTimeUtil
   ) { }
 
-  async findAll(includeOrderItems: boolean): Promise<Orders[]> {
-    if (!includeOrderItems) {
-      return this.ordersRepository.find();
+  async findAll(includeOrderItems?: boolean, marketId?: number, orderDateStart?: string, orderDateEnd?: string): Promise<Orders[]> {
+    const option = {};
+
+    if (marketId) {
+      option['market'] = { marketId };
     }
 
-    return this.ordersRepository.find({
-      relations: ['orderItems'],
-    });
+    if (orderDateStart && orderDateEnd) {
+      option['orderDate'] = Between(
+        orderDateStart.substr(0, 8),
+        orderDateEnd.substr(0, 8)
+      );
+    } else if (orderDateStart) {
+      option['orderDate'] = MoreThanOrEqual(orderDateStart.substr(0, 8));
+    } else if (orderDateEnd) {
+      option['orderDate'] = LessThanOrEqual(orderDateEnd.substr(0, 8));
+    }
+
+    return this.ordersRepository.find(
+      includeOrderItems
+      ? {
+        relations: ['orderItems'],
+        where: option,
+      }
+      : option
+    );
   }
 
-  async find(
-    channelOrderCode: string,
-    marketId?: number,
-    includeOrderItems?: boolean
-  ): Promise<Orders[]> {
+  async find(channelOrderCode: string, marketId?: number, includeOrderItems?: boolean): Promise<Orders[]> {
     const option = {};
 
     if ((channelOrderCode || '').length > 0) {
@@ -82,11 +95,7 @@ export class OrdersService {
     );
   }
 
-  async findOne(
-    channelOrderCode: string,
-    marketId: number,
-    includeOrderItems?: boolean
-  ): Promise<Orders> {
+  async findOne(channelOrderCode: string, marketId: number, includeOrderItems?: boolean): Promise<Orders> {
     const option = {
       channelOrderCode,
       market: { marketId },
@@ -102,41 +111,12 @@ export class OrdersService {
     return this.ordersRepository.findOne(option);
   }
 
-  async findUnProcessed(
-    orderDateStart?: string,
-    orderDateEnd?: string,
-    includeOrderItems?: boolean
-  ): Promise<Orders[]> {
-    const option = {
-      procDate: IsNull(),
-    };
-
-    if (orderDateStart && orderDateEnd) {
-      option['orderDate'] = Between(
-        orderDateStart.substr(0, 8),
-        orderDateEnd.substr(0, 8)
-      );
-    } else if (orderDateStart) {
-      option['orderDate'] = MoreThanOrEqual(orderDateStart.substr(0, 8));
-    } else if (orderDateEnd) {
-      option['orderDate'] = LessThanOrEqual(orderDateEnd.substr(0, 8));
-    }
-
-    if (includeOrderItems === true) {
-      return this.ordersRepository.find({
-        relations: ['orderItems'],
-        where: option,
-      });
-    }
-
-    return this.ordersRepository.find(option);
+  async findUnProcessed(orderDateStart?: string, orderDateEnd?: string, includeOrderItems?: boolean): Promise<Orders[]> {
+    const orders: Orders[] = await this.findAll(includeOrderItems, undefined, orderDateStart, orderDateEnd);
+    return orders.filter((order: Orders): boolean => (order.procDate || '').length === 0 );
   }
 
-  async findByLastModifiedDate(
-    dateStart: string,
-    dateEnd: string,
-    includeOrderItems?: boolean
-  ): Promise<Orders[]> {
+  async findByLastModifiedDate(dateStart: string, dateEnd: string, includeOrderItems?: boolean): Promise<Orders[]> {
     const option = {
       lastModifiedDttm: Between(dateStart, dateEnd),
     };
