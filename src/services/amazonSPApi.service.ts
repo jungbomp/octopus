@@ -100,8 +100,6 @@ export class AmazonSPApiService {
       ]
     }
 
-    this.logger.log('putListingsItem');
-
     return this.amazonSPApiCall(`/listings/2020-09-01/items/A2GY2PNPNA7TY6/${sku}`, 'PATCH', {}, body, queryParam, store);
   }
 
@@ -323,7 +321,7 @@ export class AmazonSPApiService {
       const unzipedBuffer = await this.unzip(decryptedBuffer);
       return JSON.parse(unzipedBuffer.toString());
     } catch (error) {
-      this.logger.log('WalmartApiCall error');
+      this.logger.log('Failed to download or unzip result feed document');
       this.logger.log(error);
       throw error;
     }
@@ -645,7 +643,7 @@ interface AwsIamConfig {
   accessKey: string,
   secretAccessKey: string,
   roleArn: string,
-  consoleLoginLink: string,
+  LoginLink: string,
   awsRegion: string,
   stsUrl: string,
 
