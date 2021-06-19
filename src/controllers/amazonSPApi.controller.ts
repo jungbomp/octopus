@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { AmazonSPApiCreateFeedDocumentResponse } from 'src/models/amazonSP/amazonSPApiCreateFeedDocumentResponse';
 import { AmazonSPApiCreateFeedResponse } from 'src/models/amazonSP/amazonSPApiCreateFeedResponse';
 import { AmazonSPApiCreateFeedSpecification } from 'src/models/amazonSP/amazonSPApiCreateFeedSpecification';
@@ -8,11 +8,22 @@ import { AmazonSPApiGetFeedDocumentResponse } from 'src/models/amazonSP/amazonSP
 import { AmazonSPApiGetFeedResponse } from 'src/models/amazonSP/amazonSPApiGetFeedResponse';
 import { AmazonSPApiOrdersRequest } from 'src/models/amazonSP/amazonSPApiOrdersRequest';
 import { AmazonSPApiService } from 'src/services/amazonSPApi.service';
+import { AmazonSPApiUpdateListingsItemQuantityRequest } from 'src/models/amazonSP/amazonSPApiUpdateListingsItemQuantityRequest';
 import { AmazonSPFeedDocumentContentTypes, AmazonSPFeedTypes, AmazonSPFeedProcessingStatuses, StoreType } from 'src/types';
 
 @Controller('amazon-sp-api/:store')
 export class AmazonSPApiController {
   constructor(private readonly amazonSPApiService: AmazonSPApiService) {}
+
+  @Get('marketplace-participations')
+  getMarketplaceParticipations(@Param('store') store: StoreType): Promise<any> {
+    return this.amazonSPApiService.getMarketplaceParticipations(store);
+  }
+
+  @Patch('listings-item/:sku')
+  putListingsItem(@Param('store') store: StoreType, @Param('sku') sku: string): Promise<any> {
+    return this.amazonSPApiService.putListingsItem(store, sku);
+  }
 
   @Get('orders')
   getOrders(@Param('store') store: StoreType,
@@ -76,6 +87,11 @@ export class AmazonSPApiController {
     return this.amazonSPApiService.cancelFeed(store, feedId);
   }
 
+  @Get('feed/:feedId/result-feed-document')
+  getResultFeedDocument(@Param('store') store: StoreType, @Param('feedId') feedId: string): Promise<any> {
+    return this.amazonSPApiService.getResultFeedDocument(store, feedId);
+  }
+
   @Post('feed-document')
   createFeedDocument(@Param('store') store: StoreType, @Query('contentType') contentType?: AmazonSPFeedDocumentContentTypes): Promise<AmazonSPApiCreateFeedDocumentResponse> {
     return this.amazonSPApiService.createFeedDocument(store, contentType);
@@ -84,5 +100,20 @@ export class AmazonSPApiController {
   @Get('feed-document/:feedDocumentId')
   getFeedDocument(@Param('store') store: StoreType, @Param('feedDocumentId') feedDocumentId: string): Promise<AmazonSPApiGetFeedDocumentResponse> {
     return this.amazonSPApiService.getFeedDocument(store, feedDocumentId);
+  }
+
+  @Post('feed/update-istings-item-quantity')
+  uploadFeedDocument(@Param('store') store: StoreType, @Body() requests: AmazonSPApiUpdateListingsItemQuantityRequest[]): Promise<any> {
+    return this.amazonSPApiService.updateListingsItemQuantity(store, requests);
+  }
+
+  @Get('search-definitions-product-types')
+  searchDefinitionsProductTypes(@Param('store') store: StoreType): Promise<any> {
+    return this.amazonSPApiService.searchDefinitionsProductTypes(store);
+  }
+
+  @Get('definitions-product-type/:productType')
+  getDefinitionsProductType(@Param('store') store: StoreType, @Param('productType') productType: string): Promise<any> {
+    return this.amazonSPApiService.getDefinitionsProductType(store, productType);
   }
 }

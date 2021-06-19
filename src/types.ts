@@ -12,6 +12,7 @@ export enum StoreType {
 };
 
 export enum AmazonSPFeedTypes {
+  JSON_LISTINGS_FEED = 'JSON_LISTINGS_FEED',
   POST_PRODUCT_DATA = 'POST_PRODUCT_DATA',
   POST_INVENTORY_AVAILABILITY_DATA = 'POST_INVENTORY_AVAILABILITY_DATA',
   POST_PRODUCT_OVERRIDES_DATA = 'POST_PRODUCT_OVERRIDES_DATA',
@@ -46,7 +47,8 @@ export enum AmazonSPFeedProcessingStatuses {
 
 export enum AmazonSPFeedDocumentContentTypes {
   TSV = 'TSV',
-  XML = 'XML'
+  XML = 'XML',
+  JSON = 'JSON',
 }
 
 export enum AmazonSPFeedDocumentStandardEncryptionTypes {
@@ -63,4 +65,23 @@ export enum AmazonSPFeedProcessingStatusTypes {
   FATAL = 'FATAL',
   IN_PROGRESS = 'IN_PROGRESS',
   IN_QUEUE = 'IN_QUEUE',
+}
+
+export enum AmazonSPPatchOperations {
+  ADD = 'add',
+  REPLACE = 'replace',
+  DELETE = 'delete',
+}
+
+export enum AmazonSPListingsFeedOperationTypes {
+  UPDATE = 'UPDATE',
+  PARTIAL_UPDATE = 'PARTIAL_UPDATE',
+  PATCH = 'PATCH',
+  DELETE = 'DELETE',
+}
+
+export enum AmazonSPListingsFeedRequirements {
+  LISTING = 'LISTING',
+  LISTING_PRODUCT_ONLY = 'LISTING_PRODUCT_ONLY',
+  LISTING_OFFER_ONLY = 'LISTING_OFFER_ONLY',
 }
