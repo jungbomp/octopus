@@ -212,6 +212,9 @@ export class AmazonSPApiService {
       JSON: 'application/json'
     }
 
+    this.logger.log('createFeedDocument');
+    this.logger.log(contentType);
+
     const createFeedDocumentSpecification: AmazonSPApiCreateFeedDocumentSpecification = {
       contentType: contentTypes[contentType?.toUpperCase() ?? 'JSON']
     }; 
