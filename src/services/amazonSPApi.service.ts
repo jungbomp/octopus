@@ -1,15 +1,10 @@
 import {  Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { Method } from 'axios';
-import { inspect } from 'util';
-import { EbayApiBulkUpdatePriceQuantityDto } from 'src/models/dto/ebayApiBulkUpdatePriceQuantity.dto';
-import { EbayApiCreateShippingFulfillmentDto } from 'src/models/dto/ebayApiCreateShippingFulfillment.dto';
-import { EbayApiCreateTaskDto } from 'src/models/dto/ebayApiCreateTask.dto';
-import { EbayApiGetOrdersDto } from 'src/models/dto/ebayApiGetOrders.dto';
-import { AmazonSPFeedDocumentContentTypes, StoreType } from 'src/types';
-import { getCurrentDate,  toAmazonDateFormat, toDateFromDateString } from '../utils/dateTime.util';
 
+import { createCipheriv, createDecipheriv, Cipher } from 'crypto';
 import { HmacSHA256, SHA256, lib, enc } from 'crypto-js';
+import { gunzip } from 'zlib';
 import { AmazonSPApiOrdersRequest } from 'src/models/amazonSP/amazonSPApiOrdersRequest';
 import { AmazonSPApiFeedsRequest } from 'src/models/amazonSP/amazonSPApiGetFeedsRequest';
 import { AmazonSPApiCreateFeedSpecification } from 'src/models/amazonSP/amazonSPApiCreateFeedSpecification';
@@ -20,7 +15,22 @@ import { AmazonSPApiError } from 'src/models/amazonSP/amazonSPApiError';
 import { AmazonSPApiGetFeedResponse } from 'src/models/amazonSP/amazonSPApiGetFeedResponse';
 import { AmazonSPApiCreateFeedResponse } from 'src/models/amazonSP/amazonSPApiCreateFeedResponse';
 import { AmazonSPApiGetFeedsResponse } from 'src/models/amazonSP/amazonSPApiGetFeedsResponse';
+import { AmazonSPApiFeedDocument } from 'src/models/amazonSP/amazonSPApiFeedDocument';
+import { AmazonSPApiListingsFeed } from 'src/models/amazonSP/amazonSPApiListingsFeed';
+import { AmazonSPApiUpdateListingsItemQuantityRequest } from 'src/models/amazonSP/amazonSPApiUpdateListingsItemQuantityRequest';
 
+import {
+  AmazonSPFeedDocumentCompressionAlgorithm,
+  AmazonSPFeedDocumentContentTypes,
+  AmazonSPFeedProcessingStatusTypes,
+  AmazonSPFeedTypes,
+  AmazonSPListingsFeedOperationTypes,
+  AmazonSPPatchOperations,
+  StoreType
+} from 'src/types';
+
+import { getCurrentDate,  toAmazonDateFormat, toDateFromDateString } from '../utils/dateTime.util';
+import { AmazonSPApiListingsFeedMessage } from 'src/models/amazonSP/amazonSPApiListingsFeedMessage';
 
 @Injectable()
 export class AmazonSPApiService {
@@ -44,6 +54,55 @@ export class AmazonSPApiService {
   ) {
     this.amazonSPApiConfig = this.configService.get<AmazonSPApiConfig>('amazonSPApiConfig');
     this.awsIamConfig = this.configService.get<AwsIamConfig>('awsIamConfig');
+  }
+
+  async getMarketplaceParticipations(store: StoreType): Promise<any> {
+    return this.amazonSPApiCall('/sellers/v1/marketplaceParticipations', 'GET', {}, null, null, store);
+  }
+
+  async putListingsItem(store: StoreType, sku: string): Promise<any> {
+    const queryParam = new Map<string, string>();
+    queryParam.set('marketplaceIds', this.marketPlaceId);
+    queryParam.set('issueLocale', 'en_US');
+
+    const body = {
+      productType: 'PRODUCT',
+      patches: [
+        {
+          op: 'replace',
+          path: '/attributes/fulfillment_availability',
+          value: [
+            {
+              fulfillment_channel_code: 'AMAZON_NA',
+              is_inventory_available: true,
+              quantity: 30
+            }
+          ]
+        },
+        {
+          op: 'replace',
+          path: '/attributes/supplier_declared_dg_hz_regulation',
+          value: [
+            {
+              value: 'not_applicable'
+            }
+          ]
+        },
+        {
+          op: 'replace',
+          path: '/attributes/batteries_required',
+          value: [
+            {
+              value: false
+            }
+          ]
+        }
+      ]
+    }
+
+    this.logger.log('putListingsItem');
+
+    return this.amazonSPApiCall(`/listings/2020-09-01/items/A2GY2PNPNA7TY6/${sku}`, 'PATCH', {}, body, queryParam, store);
   }
 
   async getOrders(store: StoreType, ordersRequest: AmazonSPApiOrdersRequest): Promise<any> {
@@ -138,7 +197,7 @@ export class AmazonSPApiService {
 
   async createFeed(store: StoreType, createFeedSpecification: AmazonSPApiCreateFeedSpecification): Promise<AmazonSPApiCreateFeedResponse> {
     if (!createFeedSpecification.marketplaceIds) {
-      createFeedSpecification.marketplaceIds = this.marketPlaceId;
+      createFeedSpecification.marketplaceIds = [this.marketPlaceId];
     }
 
     return this.amazonSPApiCall(`/feeds/${this.feedVersion}/feeds`, 'POST', {}, createFeedSpecification, null, store);
@@ -151,11 +210,15 @@ export class AmazonSPApiService {
   async createFeedDocument(store: StoreType, contentType: AmazonSPFeedDocumentContentTypes): Promise<AmazonSPApiCreateFeedDocumentResponse> {
     const contentTypes = {
       TSV: 'text/tab-separated-values; charset=iso-8859-1',
-      XML: 'text/xml; charset=utf-8'
+      XML: 'text/xml; charset=utf-8',
+      JSON: 'application/json'
     }
 
+    this.logger.log('createFeedDocument');
+    this.logger.log(contentType);
+
     const createFeedDocumentSpecification: AmazonSPApiCreateFeedDocumentSpecification = {
-      contentType: contentTypes[contentType?.toUpperCase() ?? 'XML']
+      contentType: contentTypes[contentType?.toUpperCase() ?? 'JSON']
     }; 
     
     return this.amazonSPApiCall(`/feeds/${this.feedVersion}/documents`, 'POST', {}, createFeedDocumentSpecification, null, store);
@@ -163,6 +226,134 @@ export class AmazonSPApiService {
 
   async getFeedDocument(store: StoreType, feedDocumentId: string): Promise<AmazonSPApiGetFeedDocumentResponse> {
     return this.amazonSPApiCall(`/feeds/${this.feedVersion}/documents/${feedDocumentId}`, 'GET', {}, null, null, store);
+  }
+
+  async updateListingsItemQuantity(store: StoreType, listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[]): Promise<AmazonSPApiCreateFeedResponse> {
+    const amazonSPApiListingsFeed: AmazonSPApiListingsFeed = {
+      header: {
+        sellerId: store === StoreType.HAB ? this.amazonSPApiConfig.habSellerId : this.amazonSPApiConfig.maSellerId,
+        version: '2.0',
+        issueLocale: 'en_US',
+      },
+      messages: this.createListingsFeedMessages(listingsItemQuantityRequests)
+    };
+
+    const { payload: { feedDocumentId, encryptionDetails, url }}: AmazonSPApiCreateFeedDocumentResponse = await this.createFeedDocument(store, AmazonSPFeedDocumentContentTypes.JSON);
+    await this.uploadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, amazonSPApiListingsFeed);
+    return this.createFeed(store, { feedType: AmazonSPFeedTypes.JSON_LISTINGS_FEED, inputFeedDocumentId: feedDocumentId });
+  }
+
+  private createListingsFeedMessages(listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[]): AmazonSPApiListingsFeedMessage[] {
+    return listingsItemQuantityRequests.map((request: AmazonSPApiUpdateListingsItemQuantityRequest, index: number): AmazonSPApiListingsFeedMessage => ({
+      messageId: index + 1,
+      sku: request.sku,
+      operationType: AmazonSPListingsFeedOperationTypes.PATCH,
+      productType: 'PRODUCT',
+      patches: [
+        {
+          op: AmazonSPPatchOperations.REPLACE,
+          path: '/attributes/fulfillment_availability',
+          value: [
+            {
+              fulfillment_channel_code: 'DEFAULT',
+              quantity: request.quantity
+            }
+          ]
+        }
+      ]
+    }));
+  };
+
+  async getResultFeedDocument(store: StoreType, feedId: string): Promise<any> {
+    const getFeedResponse: AmazonSPApiGetFeedResponse = await this.getFeed(store, feedId);
+    if (getFeedResponse.errors) {
+      return getFeedResponse.errors;
+    }
+
+    if (getFeedResponse.payload.processingStatus !== AmazonSPFeedProcessingStatusTypes.DONE) {
+      return getFeedResponse.payload;
+    }
+
+    const getFeedDocumentResponse: AmazonSPApiGetFeedDocumentResponse = await this.getFeedDocument(store, getFeedResponse.payload.resultFeedDocumentId);
+    if (getFeedDocumentResponse.errors) {
+      return getFeedDocumentResponse.errors;
+    }
+
+    const { compressionAlgorithm, encryptionDetails, url }: AmazonSPApiFeedDocument = getFeedDocumentResponse.payload;
+    return this.downloadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, compressionAlgorithm);
+  }
+
+  private async uploadFeedDocument(key: string, iv: string, url: string, feedDocument: any): Promise<any> {
+    const cipher: Cipher = createCipheriv('aes-256-cbc', Buffer.from(key, 'base64'), Buffer.from(iv, 'base64'));
+    const content = Buffer.from(JSON.stringify(feedDocument));
+    const encryptedBuffer = Buffer.concat([cipher.update(content), cipher.final()]);
+
+    try {
+      await axios({
+        method: 'PUT',
+        url: url,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        data: encryptedBuffer,
+        validateStatus: (status: number): boolean => status >= 200 && status < 501,
+      });
+    } catch (error) {
+      this.logger.log('Failed to upload feed document file into pre-signed url');
+      this.logger.log(error);
+      throw error;
+    }
+  }
+
+  private async downloadFeedDocument(key: string, iv: string, url: string, compression?: AmazonSPFeedDocumentCompressionAlgorithm): Promise<any> {
+    try {
+      const res = await axios({
+        method: 'GET',
+        responseType: 'arraybuffer',
+        url: url,
+        validateStatus: (status: number): boolean => status >= 200 && status < 501,
+      });
+
+      const aesDecryptor = createDecipheriv('aes-256-cbc', Buffer.from(key, 'base64'), Buffer.from(iv, 'base64'));
+      const decryptedBuffer = Buffer.concat([aesDecryptor.update(Buffer.from(res.data)), aesDecryptor.final()]);
+      if (!compression) {
+        return JSON.parse(decryptedBuffer.toString());
+      }
+
+      const unzipedBuffer = await this.unzip(decryptedBuffer);
+      return JSON.parse(unzipedBuffer.toString());
+    } catch (error) {
+      this.logger.log('WalmartApiCall error');
+      this.logger.log(error);
+      throw error;
+    }
+  }
+
+  private async unzip(zippedBuffer: ArrayBuffer): Promise<Buffer> {
+    return new Promise<Buffer>((resolve: (value: Buffer) => void, reject: (reason?: any) => void) => {
+      gunzip(zippedBuffer, (error: Error | null, result: Buffer) => {
+        if (error) {
+          reject(error);
+        }
+
+        resolve(result);
+      });
+    });
+  }
+
+  async searchDefinitionsProductTypes(store: StoreType): Promise<any> {
+    const queryParam = new Map<string, string>();
+    queryParam.set('marketplaceIds', this.marketPlaceId);
+
+    return this.amazonSPApiCall(`/definitions/2020-09-01/productTypes`, 'GET', {}, null, queryParam, store);
+  }
+
+  async getDefinitionsProductType(store: StoreType, productType: string): Promise<any> {
+    const queryParam = new Map<string, string>();
+    queryParam.set('marketplaceIds', this.marketPlaceId);
+    queryParam.set('sellerId', store === StoreType.HAB ? this.amazonSPApiConfig.habSellerId : this.amazonSPApiConfig.maSellerId);
+
+    return this.amazonSPApiCall(`/definitions/2020-09-01/productTypes/${productType}`, 'GET', {}, null, queryParam, store);
   }
 
   private getSignatureKey(key: string, dateStamp: string, regionName: string, serviceName: string): lib.WordArray {
@@ -437,6 +628,8 @@ interface AmazonSPApiConfig {
   baseUrl: string,
   habClientToken: AmazonSPApiClientTokenType,
   maCroixClientToken: AmazonSPApiClientTokenType,
+  habSellerId: string,
+  maSellerId: string,
 }
 
 interface AmazonSPApiAccessTokenType {
