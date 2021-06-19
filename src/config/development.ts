@@ -74,7 +74,9 @@ export const config = {
       refreshToken: process.env.AMAZON_SP_API_MA_REFRESH_TOKEN,
       clientId: process.env.AMAZON_SP_API_MA_CLIENT_ID,
       clientSecret: process.env.AMAZON_SP_API_MA_CLIENT_SECRET,
-    }
+    },
+    habSellerId: process.env.AMAZON_SP_API_HAB_SELLER_ID,
+    maCroixSellerId: process.env.AMAZON_SP_API_MA_SELLER_ID,
   },
   awsIamConfig: {
     userName: process.env.AWS_IAM_USER_NAME,
