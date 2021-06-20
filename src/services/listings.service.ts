@@ -10,6 +10,7 @@ import { WalmartApiUpdateInventoryDto } from '../models/dto/wamartApiUpdateInven
 import { Inventory } from '../models/inventory.entity';
 import { Listing } from '../models/listing.entity';
 import { Market } from '../models/market.entity';
+import { AmazonSPApiService } from './amazonSPApi.service';
 import { EbayApiService } from './ebayApi.service';
 import { InventoriesService } from './inventories.service';
 import { LogiwaService } from './logiwa.service';
@@ -18,6 +19,7 @@ import { WalmartApiService } from './walmartApi.service';
 import { getCurrentDttm, getDttmFromDate } from '../utils/dateTime.util';
 import { findMarketId, findStoreType, toChannelTypeFromMarketId, toStoreTypeFromMarketId } from '../utils/types.util';
 import { ChannelType, StoreType } from '../types';
+import { AmazonSPApiUpdateListingsItemQuantityRequest } from 'src/models/amazonSP/amazonSPApiUpdateListingsItemQuantityRequest';
 
 @Injectable()
 export class ListingsService {
@@ -26,6 +28,7 @@ export class ListingsService {
   constructor(
     @InjectRepository(Listing)
     private readonly listingsRepository: Repository<Listing>,
+    private readonly amazonSPApiService: AmazonSPApiService,
     private readonly ebayApiService: EbayApiService,
     private readonly inventoiesService: InventoriesService,
     private readonly logiwaService: LogiwaService,
@@ -228,6 +231,8 @@ export class ListingsService {
 
   private async updateStdSkuQuantityToEachChannel(availableSkuQuantityMap: Map<string, number>): Promise<void> {
     const createInventories: CreateInventoryDto[] = [];
+    const habAmazonSPApiUpdateListingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[] = [];
+    const maAmazonSPApiUpdateListingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[] = [];
     const habWalmartApiUpdateInventories: WalmartApiUpdateInventoryDto[] = [];
     const maWalmartApiUpdateInventories: WalmartApiUpdateInventoryDto[] = [];
     const habEbayApiBulkUpdatePriceQuantityDtos: EbayApiBulkUpdatePriceQuantityDto[] = [];
@@ -248,6 +253,14 @@ export class ListingsService {
         const store: StoreType = toStoreTypeFromMarketId(listing.market.marketId);
 
         switch (channel) {
+          case ChannelType.AMAZON:
+            if (store === StoreType.HAB) {
+              habAmazonSPApiUpdateListingsItemQuantityRequests.push({ sku: listing.listingSku, quantity });
+            } else {
+              maAmazonSPApiUpdateListingsItemQuantityRequests.push({ sku: listing.listingSku, quantity });
+            }
+            break;
+
           case ChannelType.WALMART:
             if (store === StoreType.HAB) {
               habWalmartApiUpdateInventories.push({ sku: listing.listingItemId, amount: quantity });
@@ -272,6 +285,11 @@ export class ListingsService {
       createInventory.productQty = quantity;
       createInventories.push(createInventory);
     });
+
+    if (habAmazonSPApiUpdateListingsItemQuantityRequests.length > 0) {
+      this.logger.log(`Updating ${ChannelType.AMAZON} ${StoreType.HAB} ${habAmazonSPApiUpdateListingsItemQuantityRequests.length} items quantity`);
+      await this.amazonSPApiService.updateListingsItemQuantity(StoreType.HAB, habAmazonSPApiUpdateListingsItemQuantityRequests);
+    }
 
     if (habWalmartApiUpdateInventories.length > 0) {
       this.logger.log(`Updating ${ChannelType.WALMART} ${StoreType.HAB} ${habWalmartApiUpdateInventories.length} items quantity`);
