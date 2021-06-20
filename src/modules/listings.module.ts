@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { AmazonSPApiModule } from './amazonSPApi.module';
 import { EbayApiModule } from './ebayApi.module';
 import { InventoriesModule } from './inventories.module';
 import { LogiwaApiModule } from './logiwaApi.module';
@@ -13,7 +14,16 @@ import { ListingsService } from '../services/listings.service';
 import { ListingsController } from '../controllers/listings.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Listing]), EbayApiModule, InventoriesModule, MarketsModule, LogiwaApiModule, OrdersModule, WalmartApiModule],
+  imports: [
+    TypeOrmModule.forFeature([Listing]),
+    AmazonSPApiModule,
+    EbayApiModule,
+    InventoriesModule,
+    MarketsModule,
+    LogiwaApiModule,
+    OrdersModule,
+    WalmartApiModule
+  ],
   providers: [ListingsService],
   exports: [ListingsService],
   controllers: [ListingsController],

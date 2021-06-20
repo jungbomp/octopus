@@ -14,13 +14,6 @@ export class ClockInService {
   private clockInConfig: ClockInConfig = null;
   private googleSheetFileId: string = null;
 
-  // private clockInConfig: ClockInConfig = {
-  //   'employeeClockManagementFolderId': '1CXNLJuFAaG4ZLZ3QCnjkBdcyyXor3-iO',
-  //   'currentYearFolderId': '1s4h5t9Yald-5aIm26TkMUZFh3wP6aVDP',
-  //   'templateFileId': '12RrExnyLX0jAo9possmh104iPALZSKrcRLqq7p5-pW8',
-  // };
-  // private googleSheetFileId: string = '1N-g3hRCsoSfpyfXfe6b4eaYg1fk1251mvOYyaOKPV0o';
-
   constructor(
     @InjectRepository(ClockIn)
     private readonly clockInRepository: Repository<ClockIn>,

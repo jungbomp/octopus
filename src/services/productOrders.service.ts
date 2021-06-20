@@ -31,12 +31,6 @@ import { ConfigService } from '@nestjs/config';
 export class ProductOrdersService {
   private readonly logger = new Logger(ProductOrdersService.name);
   private orderFormConfig: OrderFormConfig = null;
-  // private orderFormConfig = {
-  //   defaultSenderEmailAddress: 'hat@hatandbeyond.com',
-  //   defaultSenderName: 'HatandBeyond',
-  //   orderFormFolderId: '14VubX211KSbJfG_kr3IjHSHsYumO7075',
-  //   latestSheetFileId: '15lXCCQLmzj_hoqzseBoD0YHeSzfFB3KbawYI87DOvEI'
-  // }
 
   constructor(
     @InjectRepository(ProductOrder)
