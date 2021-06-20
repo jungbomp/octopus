@@ -258,8 +258,14 @@ export class ProductOrdersService {
   }
 
   private async getLatestClockInGoogleSheetId(): Promise<string> {
+    const childrenMetadata = [];
     const children = await this.googleApiService.getFolderChildren(this.orderFormConfig.orderFormFolderId, null);
-    const childrenMetadata = await Promise.all(children.map(async child => await this.googleApiService.getFileMetadata(child.id)));
+
+    for (let i = 0; i < children.length; i++) {
+      childrenMetadata.push(await this.googleApiService.getFileMetadata(children[i].id))
+    }
+
+    // const childrenMetadata = await Promise.all(children.map(async child => await this.googleApiService.getFileMetadata(child.id)));
     childrenMetadata.sort((lhs, rhs) => Number(lhs.title.substr(-6)) - Number(rhs.title.substr(-6)));
     
     return childrenMetadata.pop().id;

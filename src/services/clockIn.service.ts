@@ -90,8 +90,15 @@ export class ClockInService {
   }
 
   private async setCurrentGoogleSheetFileId(): Promise<string> {
-    this.googleSheetFileId = await this.getLatestClockInGoogleSheetId();
-    return this.googleSheetFileId;
+    try {
+      this.googleSheetFileId = await this.getLatestClockInGoogleSheetId();
+      return this.googleSheetFileId;
+    } catch (error) {
+      this.logger.log('Failed to lookup latest clock-in google sheet id');
+      this.logger.log(error);
+    }
+
+    return null;
   }
 
   private async getLatestClockInGoogleSheetId(): Promise<string> {
