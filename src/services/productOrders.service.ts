@@ -252,12 +252,20 @@ export class ProductOrdersService {
   }
 
   private async setCurrentGoogleSheetFileId(): Promise<string> {
-    const fileId = await this.getLatestClockInGoogleSheetId();
-    this.orderFormConfig.latestSheetFileId = fileId;
-    return fileId;
+    try {
+      const fileId = await this.getLatestGoogleSheetId();
+      this.orderFormConfig.latestSheetFileId = fileId;
+      return fileId;
+    } catch(error) {
+      this.logger.log('Failed to lookup current google sheet file id');
+      this.logger.log(error);
+    }
+
+    this.orderFormConfig.latestSheetFileId = undefined;
+    return null;
   }
 
-  private async getLatestClockInGoogleSheetId(): Promise<string> {
+  private async getLatestGoogleSheetId(): Promise<string> {
     const childrenMetadata = [];
     const children = await this.googleApiService.getFolderChildren(this.orderFormConfig.orderFormFolderId, null);
 

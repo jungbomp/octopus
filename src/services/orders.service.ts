@@ -7,7 +7,7 @@ import {
   LessThanOrEqual,
 } from 'typeorm';
 
-import { ChannelType, StoreType } from 'src/types';
+import { AmazonSPFulfillmentCarrierCode, ChannelType, StoreType } from 'src/types';
 import { findChannelTypeFromChannelId, findMarketId, findStoreType, toChannelTypeFromMarketId, toStoreTypeFromMarketId } from 'src/utils/types.util';
 import { DateTimeUtil, getCurrentDate, getDttmFromDate } from 'src/utils/dateTime.util';
 
@@ -18,6 +18,8 @@ import { MarketsService } from './markets.service';
 import { UsersService } from './users.service';
 import { WalmartApiService } from './walmartApi.service';
 
+import { AmazonSPApiUpdateOrderFulfillmentRequest } from '../models/amazonSP/amazonSPApiUpdateOrderFulfillmentRequest';
+import { AmazonSPApiCreateFeedResponse } from '../models/amazonSP/amazonSPApiCreateFeedResponse';
 import { CreateOrderDto } from '../models/dto/createOrder.dto';
 import { CreateOrderItemDto } from '../models/dto/createOrderItem.dto';
 import { EbayApiCreateShippingFulfillmentDto } from '../models/dto/ebayApiCreateShippingFulfillment.dto';
@@ -27,6 +29,7 @@ import { OrderItem } from '../models/orderItem.entity';
 import { Orders } from '../models/orders.entity';
 import { User } from '../models/user.entity';
 import { Inventory } from '../models/inventory.entity';
+import { AmazonSPApiService } from './amazonSPApi.service';
 
 @Injectable()
 export class OrdersService {
@@ -37,6 +40,7 @@ export class OrdersService {
     private readonly ordersRepository: Repository<Orders>,
     @InjectRepository(OrderItem)
     private readonly orderItemsRepository: Repository<OrderItem>,
+    private readonly amazonSPApiService: AmazonSPApiService,
     private readonly ebayApiService: EbayApiService,
     private readonly inventoriesService: InventoriesService,
     private readonly logiwaService: LogiwaService,
@@ -277,6 +281,7 @@ export class OrdersService {
     const filteredOrders: Orders[] = orders.filter((order: Orders) => (order.trackingNo || '').length > 0 && (order.procDate || '').length === 0);
 
     this.logger.log(`Starting to update tracking number to each channel with ${filteredOrders.length} orders`);
+    const amazonHabUpdateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[] = [];
 
     for (let i = 0; i < filteredOrders.length; i++) {
       const order: Orders = filteredOrders[i];
@@ -285,6 +290,17 @@ export class OrdersService {
 
       try {
         switch (channelType) {
+          case ChannelType.AMAZON:
+            if (storeType === StoreType.HAB) {
+              amazonHabUpdateOrderFulfillmentRequests.push({
+                amazonOrderId: order.channelOrderCode,
+                fulfillmentDate: getCurrentDate().toISOString(),
+                carrierCode: AmazonSPFulfillmentCarrierCode.USPS,
+                shippingMethod: 'USPS - First-Class Mail',
+                shipperTrackingNumber: order.trackingNo,
+              });
+            }
+            break;
           case ChannelType.WALMART:
             await this.updateWalmartTrackingNo(storeType, order.channelOrderCode, order.trackingNo);
             break;
@@ -299,7 +315,15 @@ export class OrdersService {
       }
     }
 
+    if (amazonHabUpdateOrderFulfillmentRequests.length > 0) {
+      this.updateAmazonTrackingNo(StoreType.HAB, amazonHabUpdateOrderFulfillmentRequests);
+    }
+
     this.logger.log(`Completed to update tracking number to each channel`);
+  }
+
+  private async updateAmazonTrackingNo(store: StoreType, updateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]): Promise<AmazonSPApiCreateFeedResponse|string> {
+    return this.amazonSPApiService.updateOrderFulfillmentTracking(store, updateOrderFulfillmentRequests);
   }
 
   private async updateWalmartTrackingNo(store: StoreType, channelOrderCode: string, trackingNo: string): Promise<void> {

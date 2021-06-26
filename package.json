@@ -38,6 +38,7 @@
     "rimraf": "3.0.2",
     "rxjs": "6.6.3",
     "typeorm": "0.2.29",
+    "xmlbuilder2": "^2.4.1",
     "zlib": "^1.0.5"
   },
   "devDependencies": {

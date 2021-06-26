@@ -130,7 +130,7 @@ export class ListingsService {
           const createListingDto = new CreateListingDto();
           createListingDto.listingItemId = logiwaListing.ChannelItemNumber.toUpperCase();
           createListingDto.marketId = findMarketId(channel, store);
-          createListingDto.stdSku = stdSku.toUpperCase();
+          createListingDto.stdSku = stdSku?.toUpperCase();
           createListingDto.listingSku = logiwaListing.SellerSKU.toUpperCase();
           createListingDto.listingItemName = logiwaListing.ItemDescription;
           createListingDto.listingItemQuantity = logiwaListing.InventoryAmount;

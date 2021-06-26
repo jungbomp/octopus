@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { AmazonSPApiModule } from './amazonSPApi.module';
 import { InventoriesModule } from './inventories.module';
 import { LogiwaApiModule } from './logiwaApi.module';
 import { MarketsModule } from './markets.module';
@@ -17,7 +18,7 @@ import { OrdersController } from '../controllers/orders.controller';
 import { DateTimeUtil } from '../utils/dateTime.util';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Orders, OrderItem]), InventoriesModule, LogiwaApiModule, MarketsModule, UsersModule, WalmartApiModule],
+  imports: [TypeOrmModule.forFeature([Orders, OrderItem]), AmazonSPApiModule, InventoriesModule, LogiwaApiModule, MarketsModule, UsersModule, WalmartApiModule],
   providers: [OrdersService, EbayApiService, DateTimeUtil],
   exports: [OrdersService],
   controllers: [OrdersController],

@@ -1,10 +1,12 @@
 import {  Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { Method } from 'axios';
-
 import { createCipheriv, createDecipheriv, Cipher } from 'crypto';
 import { HmacSHA256, SHA256, lib, enc } from 'crypto-js';
+import { create } from 'xmlbuilder2';
+import type { XMLBuilder } from 'xmlbuilder2/lib/interfaces';
 import { gunzip } from 'zlib';
+
 import { AmazonSPApiOrdersRequest } from 'src/models/amazonSP/amazonSPApiOrdersRequest';
 import { AmazonSPApiFeedsRequest } from 'src/models/amazonSP/amazonSPApiGetFeedsRequest';
 import { AmazonSPApiCreateFeedSpecification } from 'src/models/amazonSP/amazonSPApiCreateFeedSpecification';
@@ -18,6 +20,7 @@ import { AmazonSPApiGetFeedsResponse } from 'src/models/amazonSP/amazonSPApiGetF
 import { AmazonSPApiFeedDocument } from 'src/models/amazonSP/amazonSPApiFeedDocument';
 import { AmazonSPApiListingsFeed } from 'src/models/amazonSP/amazonSPApiListingsFeed';
 import { AmazonSPApiUpdateListingsItemQuantityRequest } from 'src/models/amazonSP/amazonSPApiUpdateListingsItemQuantityRequest';
+import { AmazonSPApiUpdateOrderFulfillmentRequest } from 'src/models/amazonSP/amazonSPApiUpdateOrderFulfillmentRequest';
 
 import {
   AmazonSPFeedDocumentCompressionAlgorithm,
@@ -31,6 +34,7 @@ import {
 
 import { getCurrentDate,  toAmazonDateFormat, toDateFromDateString } from '../utils/dateTime.util';
 import { AmazonSPApiListingsFeedMessage } from 'src/models/amazonSP/amazonSPApiListingsFeedMessage';
+import { AmazonSPApiOrderFulfillmentFeedMessage } from 'src/models/amazonSP/amazonSPApiOrderFulfillmentFeedMessage';
 
 @Injectable()
 export class AmazonSPApiService {
@@ -206,19 +210,10 @@ export class AmazonSPApiService {
   }
 
   async createFeedDocument(store: StoreType, contentType: AmazonSPFeedDocumentContentTypes): Promise<AmazonSPApiCreateFeedDocumentResponse> {
-    const contentTypes = {
-      TSV: 'text/tab-separated-values; charset=iso-8859-1',
-      XML: 'text/xml; charset=utf-8',
-      JSON: 'application/json'
-    }
-
-    this.logger.log('createFeedDocument');
-    this.logger.log(contentType);
-
     const createFeedDocumentSpecification: AmazonSPApiCreateFeedDocumentSpecification = {
-      contentType: contentTypes[contentType?.toUpperCase() ?? 'JSON']
+      contentType: this.getContentType(contentType)
     }; 
-    
+
     return this.amazonSPApiCall(`/feeds/${this.feedVersion}/documents`, 'POST', {}, createFeedDocumentSpecification, null, store);
   }
 
@@ -226,7 +221,7 @@ export class AmazonSPApiService {
     return this.amazonSPApiCall(`/feeds/${this.feedVersion}/documents/${feedDocumentId}`, 'GET', {}, null, null, store);
   }
 
-  async updateListingsItemQuantity(store: StoreType, listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[]): Promise<AmazonSPApiCreateFeedResponse> {
+  async updateListingsItemQuantity(store: StoreType, listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[]): Promise<AmazonSPApiCreateFeedResponse|string> {
     const amazonSPApiListingsFeed: AmazonSPApiListingsFeed = {
       header: {
         sellerId: store === StoreType.HAB ? this.amazonSPApiConfig.habSellerId : this.amazonSPApiConfig.maSellerId,
@@ -237,7 +232,10 @@ export class AmazonSPApiService {
     };
 
     const { payload: { feedDocumentId, encryptionDetails, url }}: AmazonSPApiCreateFeedDocumentResponse = await this.createFeedDocument(store, AmazonSPFeedDocumentContentTypes.JSON);
-    await this.uploadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, amazonSPApiListingsFeed);
+    const uploadResponse: string = await this.uploadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, JSON.stringify(amazonSPApiListingsFeed), AmazonSPFeedDocumentContentTypes.JSON);
+    if (uploadResponse.length > 0) {
+      return uploadResponse;
+    }
     return this.createFeed(store, { feedType: AmazonSPFeedTypes.JSON_LISTINGS_FEED, inputFeedDocumentId: feedDocumentId });
   }
 
@@ -262,6 +260,89 @@ export class AmazonSPApiService {
     }));
   };
 
+  async updateOrderFulfillmentTracking(store: StoreType, orderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]): Promise<AmazonSPApiCreateFeedResponse|string> {
+    const orderFulfillmentFeed: string = this.createPostOrderFulfillmentFeedMessage(store, orderFulfillmentRequests);
+
+    const { payload: { feedDocumentId, encryptionDetails, url }}: AmazonSPApiCreateFeedDocumentResponse = await this.createFeedDocument(store, AmazonSPFeedDocumentContentTypes.XML);;
+    const uploadResponse: string = await this.uploadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, orderFulfillmentFeed, this.getContentType(AmazonSPFeedDocumentContentTypes.XML));
+    if (uploadResponse.length > 0) {
+      return uploadResponse;
+    }
+
+    return this.createFeed(store, { feedType: AmazonSPFeedTypes.POST_ORDER_FULFILLMENT_DATA, inputFeedDocumentId: feedDocumentId });
+  }
+
+  private createPostOrderFulfillmentFeedMessage(store: StoreType, orderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]): string {
+    const doc: XMLBuilder = create(
+      { version: '1.0', encoding: 'UTF-8' },
+      {
+        AmazonEnvelope: {
+          '@xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+          '@xsi:noNamespaceSchemaLocation': 'amzn-envelope.xsd',
+          Header: {
+            DocumentVersion: '1.02',
+            MerchantIdentifier: store === StoreType.HAB ? this.amazonSPApiConfig.habSellerId : this.amazonSPApiConfig.maSellerId
+          },
+          MessageType: 'OrderFulfillment',
+          Message: orderFulfillmentRequests.map((orderFulfillmentRequest: AmazonSPApiUpdateOrderFulfillmentRequest, i: number): any => ({
+            MessageID: i + 1, ...this.convertOrderFulfillmentMessage(orderFulfillmentRequest, 1)
+          }))
+        }
+      }
+    );
+
+    return doc.end({ prettyPrint: true });
+  }
+
+  private convertOrderFulfillmentMessage(orderFulfillmentRequest: AmazonSPApiUpdateOrderFulfillmentRequest, messageId: number): AmazonSPApiOrderFulfillmentFeedMessage {
+    return {
+      OrderFulfillment: {
+        AmazonOrderID: orderFulfillmentRequest.amazonOrderId,
+        FulfillmentDate: toDateFromDateString(orderFulfillmentRequest.fulfillmentDate).toISOString(),
+        FulfillmentData: {
+          CarrierCode: orderFulfillmentRequest.carrierCode,
+          CarrierName: orderFulfillmentRequest.carrierCode,
+          ShippingMethod: orderFulfillmentRequest.shippingMethod,
+          ShipperTrackingNumber: orderFulfillmentRequest.shipperTrackingNumber
+        }
+      }
+    };
+  }
+
+  private async uploadFeedDocument(key: string, iv: string, url: string, feedDocument: string, contentType: string): Promise<any> {
+    const cipher: Cipher = createCipheriv('aes-256-cbc', Buffer.from(key, 'base64'), Buffer.from(iv, 'base64'));
+    const content = Buffer.from(feedDocument);
+    const encryptedBuffer = Buffer.concat([cipher.update(content), cipher.final()]);
+
+    try {
+      const response =  await axios({
+        method: 'PUT',
+        url: url,
+        headers: {
+          'Content-Type': contentType
+        },
+        data: encryptedBuffer,
+        validateStatus: (status: number): boolean => status >= 200 && status < 501,
+      });
+
+      return response.data;
+    } catch (error) {
+      this.logger.log('Failed to upload feed document file into pre-signed url');
+      this.logger.log(error);
+      throw error;
+    }
+  }
+
+  private getContentType(contentType: AmazonSPFeedDocumentContentTypes): string {
+    const contentTypes = {
+      TSV: 'text/tab-separated-values; charset=iso-8859-1',
+      XML: 'text/xml; charset=utf-8',
+      JSON: 'application/json'
+    }
+
+    return contentTypes[contentType?.toUpperCase() ?? 'JSON'];
+  }
+
   async getResultFeedDocument(store: StoreType, feedId: string): Promise<any> {
     const getFeedResponse: AmazonSPApiGetFeedResponse = await this.getFeed(store, feedId);
     if (getFeedResponse.errors) {
@@ -278,32 +359,12 @@ export class AmazonSPApiService {
     }
 
     const { compressionAlgorithm, encryptionDetails, url }: AmazonSPApiFeedDocument = getFeedDocumentResponse.payload;
-    return this.downloadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, compressionAlgorithm);
+    const feedDocumentStr = await this.downloadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, compressionAlgorithm);
+
+    return getFeedResponse.payload.feedType === AmazonSPFeedTypes.JSON_LISTINGS_FEED ? JSON.parse(feedDocumentStr) : feedDocumentStr;
   }
 
-  private async uploadFeedDocument(key: string, iv: string, url: string, feedDocument: any): Promise<any> {
-    const cipher: Cipher = createCipheriv('aes-256-cbc', Buffer.from(key, 'base64'), Buffer.from(iv, 'base64'));
-    const content = Buffer.from(JSON.stringify(feedDocument));
-    const encryptedBuffer = Buffer.concat([cipher.update(content), cipher.final()]);
-
-    try {
-      await axios({
-        method: 'PUT',
-        url: url,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        data: encryptedBuffer,
-        validateStatus: (status: number): boolean => status >= 200 && status < 501,
-      });
-    } catch (error) {
-      this.logger.log('Failed to upload feed document file into pre-signed url');
-      this.logger.log(error);
-      throw error;
-    }
-  }
-
-  private async downloadFeedDocument(key: string, iv: string, url: string, compression?: AmazonSPFeedDocumentCompressionAlgorithm): Promise<any> {
+  private async downloadFeedDocument(key: string, iv: string, url: string, compression?: AmazonSPFeedDocumentCompressionAlgorithm): Promise<string> {
     try {
       const res = await axios({
         method: 'GET',
@@ -315,11 +376,11 @@ export class AmazonSPApiService {
       const aesDecryptor = createDecipheriv('aes-256-cbc', Buffer.from(key, 'base64'), Buffer.from(iv, 'base64'));
       const decryptedBuffer = Buffer.concat([aesDecryptor.update(Buffer.from(res.data)), aesDecryptor.final()]);
       if (!compression) {
-        return JSON.parse(decryptedBuffer.toString());
+        return decryptedBuffer.toString();
       }
 
       const unzipedBuffer = await this.unzip(decryptedBuffer);
-      return JSON.parse(unzipedBuffer.toString());
+      return unzipedBuffer.toString();
     } catch (error) {
       this.logger.log('Failed to download or unzip result feed document');
       this.logger.log(error);
