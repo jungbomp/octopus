@@ -5,6 +5,7 @@ import {
   Between,
   MoreThanOrEqual,
   LessThanOrEqual,
+  UpdateResult,
 } from 'typeorm';
 
 import { AmazonSPFulfillmentCarrierCode, ChannelType, StoreType } from 'src/types';
@@ -149,6 +150,23 @@ export class OrdersService {
   //         productMap.inventory.stdSize.shortSizeCode,
   //         productMap.inventory.stdSize.sizeOrder));
   // }
+
+  async updateOrdersProcDttm(channelOrderCode: string, marketId: number, procDate: Date): Promise<UpdateResult> {
+    const criteria = {
+      channelOrderCode,
+      market: {
+        marketId
+      },
+    };
+
+    const partialEntity = {
+      procDate: this.dateTimeUtil.getDttmFromDate(procDate).substr(0, 8),
+      procTime: this.dateTimeUtil.getDttmFromDate(procDate).substr(8, 6),
+      lastModifiedDttm: this.dateTimeUtil.getCurrentDttm(),
+    };
+
+    return this.ordersRepository.update(criteria, partialEntity);
+  }
 
   async create(createOrderDto: CreateOrderDto): Promise<Orders> {
     const market = await this.marketsService.findOne(createOrderDto.marketId);
@@ -322,8 +340,16 @@ export class OrdersService {
     this.logger.log(`Completed to update tracking number to each channel`);
   }
 
-  private async updateAmazonTrackingNo(store: StoreType, updateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]): Promise<AmazonSPApiCreateFeedResponse|string> {
-    return this.amazonSPApiService.updateOrderFulfillmentTracking(store, updateOrderFulfillmentRequests);
+  private async updateAmazonTrackingNo(store: StoreType, updateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]): Promise<void> {
+    const createFeedResponse: AmazonSPApiCreateFeedResponse|string = await this.amazonSPApiService.updateOrderFulfillmentTracking(store, updateOrderFulfillmentRequests);
+
+    if ((createFeedResponse as AmazonSPApiCreateFeedResponse).payload?.feedId) {
+      const procDate = getCurrentDate();
+
+      updateOrderFulfillmentRequests.forEach(({ amazonOrderId }: AmazonSPApiUpdateOrderFulfillmentRequest) => {
+        this.updateOrdersProcDttm(amazonOrderId, findMarketId(ChannelType.AMAZON, store), procDate)
+      });
+    }
   }
 
   private async updateWalmartTrackingNo(store: StoreType, channelOrderCode: string, trackingNo: string): Promise<void> {
@@ -334,20 +360,8 @@ export class OrdersService {
         response.order.orderLines.orderLine[0].orderLineStatuses.orderLineStatus[0].trackingInfo.shipDateTime
       );
 
-      const criteria = {
-        channelOrderCode,
-        market: {
-          marketId: findMarketId(ChannelType.WALMART, store)
-        },
-      };
-
-      const partialEntity = {
-        procDate: this.dateTimeUtil.getDttmFromDate(orderDate).substr(0, 8),
-        procTime: this.dateTimeUtil.getDttmFromDate(orderDate).substr(8, 6),
-        lastModifiedDttm: this.dateTimeUtil.getCurrentDttm(),
-      };
-
-      await this.ordersRepository.update(criteria, partialEntity);
+      const marketId: number = findMarketId(ChannelType.WALMART, store);
+      await this.updateOrdersProcDttm(channelOrderCode, marketId, orderDate);
     }
   }
 
@@ -383,6 +397,6 @@ export class OrdersService {
       lastModifiedDttm: currentDttm
     }
 
-    await this.ordersRepository.update(criteria, partialEntity);
+    await this.updateOrdersProcDttm(channelOrderCode, findMarketId(ChannelType.EBAY, store), getCurrentDate());
   }
 }
