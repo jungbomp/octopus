@@ -426,7 +426,7 @@ export class ProductOrdersService {
           {email: 'jcsky.tedk@gmail.com', name: 'Ted'}
         ],
         from: {email: this.orderFormConfig.defaultSenderEmailAddress, name: this.orderFormConfig.defaultSenderName},
-        subject: `${mm}/${dd}/${yyyy} ${ordersFrom} ORDER`,
+        subject: `${mm}/${dd}/${yyyy} ${ordersFrom} ORDER - Order ${orderSeq}`,
         text: 'Hello world',
         html: `<div>
                 <div><span>Dear ${receiver.name},</span></div>
