@@ -10,6 +10,7 @@ import { AmazonSPApiOrdersRequest } from 'src/models/amazonSP/amazonSPApiOrdersR
 import { AmazonSPApiService } from 'src/services/amazonSPApi.service';
 import { AmazonSPApiUpdateListingsItemQuantityRequest } from 'src/models/amazonSP/amazonSPApiUpdateListingsItemQuantityRequest';
 import { AmazonSPFeedDocumentContentTypes, AmazonSPFeedTypes, AmazonSPFeedProcessingStatuses, StoreType } from 'src/types';
+import { AmazonSPApiUpdateOrderFulfillmentRequest } from 'src/models/amazonSP/amazonSPApiUpdateOrderFulfillmentRequest';
 
 @Controller('amazon-sp-api/:store')
 export class AmazonSPApiController {
@@ -102,9 +103,14 @@ export class AmazonSPApiController {
     return this.amazonSPApiService.getFeedDocument(store, feedDocumentId);
   }
 
-  @Post('feed/update-istings-item-quantity')
-  uploadFeedDocument(@Param('store') store: StoreType, @Body() requests: AmazonSPApiUpdateListingsItemQuantityRequest[]): Promise<any> {
+  @Put('feed/update-listings-item-quantity')
+  uploadFeedDocument(@Param('store') store: StoreType, @Body() requests: AmazonSPApiUpdateListingsItemQuantityRequest[]): Promise<AmazonSPApiCreateFeedResponse|string> {
     return this.amazonSPApiService.updateListingsItemQuantity(store, requests);
+  }
+
+  @Put('feed/update-order-fulfillment-tracking')
+  updateOrderFulfillmentTracking(@Param('store') store: StoreType, @Body() requests: AmazonSPApiUpdateOrderFulfillmentRequest[]): Promise<AmazonSPApiCreateFeedResponse|string> {
+    return this.amazonSPApiService.updateOrderFulfillmentTracking(store, requests);
   }
 
   @Get('search-definitions-product-types')

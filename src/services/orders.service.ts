@@ -5,9 +5,10 @@ import {
   Between,
   MoreThanOrEqual,
   LessThanOrEqual,
+  UpdateResult,
 } from 'typeorm';
 
-import { ChannelType, StoreType } from 'src/types';
+import { AmazonSPFulfillmentCarrierCode, ChannelType, StoreType } from 'src/types';
 import { findChannelTypeFromChannelId, findMarketId, findStoreType, toChannelTypeFromMarketId, toStoreTypeFromMarketId } from 'src/utils/types.util';
 import { DateTimeUtil, getCurrentDate, getDttmFromDate } from 'src/utils/dateTime.util';
 
@@ -18,6 +19,8 @@ import { MarketsService } from './markets.service';
 import { UsersService } from './users.service';
 import { WalmartApiService } from './walmartApi.service';
 
+import { AmazonSPApiUpdateOrderFulfillmentRequest } from '../models/amazonSP/amazonSPApiUpdateOrderFulfillmentRequest';
+import { AmazonSPApiCreateFeedResponse } from '../models/amazonSP/amazonSPApiCreateFeedResponse';
 import { CreateOrderDto } from '../models/dto/createOrder.dto';
 import { CreateOrderItemDto } from '../models/dto/createOrderItem.dto';
 import { EbayApiCreateShippingFulfillmentDto } from '../models/dto/ebayApiCreateShippingFulfillment.dto';
@@ -27,6 +30,7 @@ import { OrderItem } from '../models/orderItem.entity';
 import { Orders } from '../models/orders.entity';
 import { User } from '../models/user.entity';
 import { Inventory } from '../models/inventory.entity';
+import { AmazonSPApiService } from './amazonSPApi.service';
 
 @Injectable()
 export class OrdersService {
@@ -37,6 +41,7 @@ export class OrdersService {
     private readonly ordersRepository: Repository<Orders>,
     @InjectRepository(OrderItem)
     private readonly orderItemsRepository: Repository<OrderItem>,
+    private readonly amazonSPApiService: AmazonSPApiService,
     private readonly ebayApiService: EbayApiService,
     private readonly inventoriesService: InventoriesService,
     private readonly logiwaService: LogiwaService,
@@ -145,6 +150,23 @@ export class OrdersService {
   //         productMap.inventory.stdSize.shortSizeCode,
   //         productMap.inventory.stdSize.sizeOrder));
   // }
+
+  async updateOrdersProcDttm(channelOrderCode: string, marketId: number, procDate: Date): Promise<UpdateResult> {
+    const criteria = {
+      channelOrderCode,
+      market: {
+        marketId
+      },
+    };
+
+    const partialEntity = {
+      procDate: this.dateTimeUtil.getDttmFromDate(procDate).substr(0, 8),
+      procTime: this.dateTimeUtil.getDttmFromDate(procDate).substr(8, 6),
+      lastModifiedDttm: this.dateTimeUtil.getCurrentDttm(),
+    };
+
+    return this.ordersRepository.update(criteria, partialEntity);
+  }
 
   async create(createOrderDto: CreateOrderDto): Promise<Orders> {
     const market = await this.marketsService.findOne(createOrderDto.marketId);
@@ -277,6 +299,7 @@ export class OrdersService {
     const filteredOrders: Orders[] = orders.filter((order: Orders) => (order.trackingNo || '').length > 0 && (order.procDate || '').length === 0);
 
     this.logger.log(`Starting to update tracking number to each channel with ${filteredOrders.length} orders`);
+    const amazonHabUpdateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[] = [];
 
     for (let i = 0; i < filteredOrders.length; i++) {
       const order: Orders = filteredOrders[i];
@@ -285,6 +308,17 @@ export class OrdersService {
 
       try {
         switch (channelType) {
+          case ChannelType.AMAZON:
+            if (storeType === StoreType.HAB) {
+              amazonHabUpdateOrderFulfillmentRequests.push({
+                amazonOrderId: order.channelOrderCode,
+                fulfillmentDate: getCurrentDate().toISOString(),
+                carrierCode: AmazonSPFulfillmentCarrierCode.USPS,
+                shippingMethod: 'USPS - First-Class Mail',
+                shipperTrackingNumber: order.trackingNo,
+              });
+            }
+            break;
           case ChannelType.WALMART:
             await this.updateWalmartTrackingNo(storeType, order.channelOrderCode, order.trackingNo);
             break;
@@ -299,7 +333,23 @@ export class OrdersService {
       }
     }
 
+    if (amazonHabUpdateOrderFulfillmentRequests.length > 0) {
+      this.updateAmazonTrackingNo(StoreType.HAB, amazonHabUpdateOrderFulfillmentRequests);
+    }
+
     this.logger.log(`Completed to update tracking number to each channel`);
+  }
+
+  private async updateAmazonTrackingNo(store: StoreType, updateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]): Promise<void> {
+    const createFeedResponse: AmazonSPApiCreateFeedResponse|string = await this.amazonSPApiService.updateOrderFulfillmentTracking(store, updateOrderFulfillmentRequests);
+
+    if ((createFeedResponse as AmazonSPApiCreateFeedResponse).payload?.feedId) {
+      const procDate = getCurrentDate();
+
+      updateOrderFulfillmentRequests.forEach(({ amazonOrderId }: AmazonSPApiUpdateOrderFulfillmentRequest) => {
+        this.updateOrdersProcDttm(amazonOrderId, findMarketId(ChannelType.AMAZON, store), procDate)
+      });
+    }
   }
 
   private async updateWalmartTrackingNo(store: StoreType, channelOrderCode: string, trackingNo: string): Promise<void> {
@@ -310,20 +360,8 @@ export class OrdersService {
         response.order.orderLines.orderLine[0].orderLineStatuses.orderLineStatus[0].trackingInfo.shipDateTime
       );
 
-      const criteria = {
-        channelOrderCode,
-        market: {
-          marketId: findMarketId(ChannelType.WALMART, store)
-        },
-      };
-
-      const partialEntity = {
-        procDate: this.dateTimeUtil.getDttmFromDate(orderDate).substr(0, 8),
-        procTime: this.dateTimeUtil.getDttmFromDate(orderDate).substr(8, 6),
-        lastModifiedDttm: this.dateTimeUtil.getCurrentDttm(),
-      };
-
-      await this.ordersRepository.update(criteria, partialEntity);
+      const marketId: number = findMarketId(ChannelType.WALMART, store);
+      await this.updateOrdersProcDttm(channelOrderCode, marketId, orderDate);
     }
   }
 
@@ -359,6 +397,6 @@ export class OrdersService {
       lastModifiedDttm: currentDttm
     }
 
-    await this.ordersRepository.update(criteria, partialEntity);
+    await this.updateOrdersProcDttm(channelOrderCode, findMarketId(ChannelType.EBAY, store), getCurrentDate());
   }
 }

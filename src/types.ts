@@ -85,3 +85,11 @@ export enum AmazonSPListingsFeedRequirements {
   LISTING_PRODUCT_ONLY = 'LISTING_PRODUCT_ONLY',
   LISTING_OFFER_ONLY = 'LISTING_OFFER_ONLY',
 }
+
+export enum AmazonSPFulfillmentCarrierCode {
+  USPS = 'USPS',
+  UPS = 'UPS',
+  UPSMI = 'UPSMI',
+  FedEx = 'FedEx',
+  DHL = 'DHL',
+}
