@@ -21,13 +21,13 @@ export class TasksService {
   ) {}
 
   @Cron('0 5 1 * * 1')
-  async createClockInGoogleSheet(): Promise<void> {
+  createClockInGoogleSheet(): void {
     this.logger.log('triggered createClockInGoogleSheet');
-    // const fileId = await this.clockInService.createNewClockInGoogleSheetIfNewDate();
+    // this.clockInService.createNewClockInGoogleSheetIfNewDate();
   }
 
   @Cron('0 50 1-23/3 * * *')
-  async loadOrderDataFromLogiwa(): Promise<void> {
+  loadOrderDataFromLogiwa(): void {
     this.logger.log(`triggered loadDataFromLogiwa`);
     const currentDate = this.dateTimeUtil.getCurrentDate();
     const threeHoursBefore = this.dateTimeUtil.subtractDate(currentDate, 0, 3, 10, 0);
@@ -36,24 +36,24 @@ export class TasksService {
     const logiwaOrderSearchDto = new LogiwaOrderSearchDto(0);
     logiwaOrderSearchDto.lastModifiedDateStart = this.dateTimeUtil.getDttmFromDate(threeHoursBefore);
     logiwaOrderSearchDto.lastModifiedDateEnd = getDttmFromDate(currentDate);
-    // await this.ordersService.loadOrderDataFromLogiwa(logiwaOrderSearchDto)
-    //   .then(async () => await this.ordersService.updateTrackingToChannel(oneDayBefore, currentDate));
+    // this.ordersService.loadOrderDataFromLogiwa(logiwaOrderSearchDto)
+    //   .then(() => this.ordersService.updateTrackingToChannel(oneDayBefore, currentDate));
   }
 
   @Cron('0 0 19 * * *')
-  async loadInventoryFromLogiwa(): Promise<void> {
+  loadInventoryFromLogiwa(): void {
     this.logger.log(`triggered loadInventoryFromLogiwa`);
 
     const yesterDay: Date = subtractDate(getCurrentDate(), 1, 0, 0, 0);
     const logiwaInventoryitemSearchDto: LogiwaInventoryitemSearchDto = {
       lastModifiedDateStart: getDttmFromDate(yesterDay) // yyyymmddhh24miss
     };
-    // await this.inventoriesService.loadInventoryDataFromLogiwa(logiwaInventoryitemSearchDto).then(() =>
-    //   this.listingsService.loadListingDataFromLogiwa({}));
+    // this.inventoriesService.loadInventoryDataFromLogiwa(logiwaInventoryitemSearchDto)
+    //   .then(() => this.listingsService.loadListingDataFromLogiwa({}));
   }
 
   @Cron('0 0,30 * * * *')
-  async updateListingQuantity(): Promise<void> {
+  updateListingQuantity(): void {
     this.logger.log(`triggered updateListingQuantity`);
     const currentDate = this.dateTimeUtil.getCurrentDate();
     const thirtyMinutesBefore = subtractDate(currentDate, 0, 0, 31, 0);

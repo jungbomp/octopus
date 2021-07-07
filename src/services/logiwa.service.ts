@@ -59,11 +59,12 @@ export class LogiwaService {
         'Content-Type': 'application/json',
         'Authorization': `${tokenType} ${accessToken}`,
       },
-      data: JSON.stringify(data)
+      data: JSON.stringify(data),
+      validateStatus: (status: number): boolean => status >= 200 && status < 501,
     });
 
     if (res.status !== 200) {
-      this.logger.error(res);
+      this.logger.error(res.data);
       throw new Error(res.statusText);
     }
 
@@ -262,13 +263,13 @@ export class LogiwaService {
     return this.inventoryItemIdMap[inventoryItemId]?.code;
   }
 
-  async getLogiwaInventoryItemPackTypeId(inventoryItemId: string): Promise<number> {
+  async getLogiwaInventoryItemPackTypeId(inventoryItemId: string, logiwaItem: any): Promise<number> {
     const inventoryItemPackTypeId: number = this.inventoryItemIdMap[inventoryItemId]?.inventoryItemPackTypeId;
     if (inventoryItemPackTypeId) {
       return inventoryItemPackTypeId;
     }
 
-    await this.updateInventoryItemMapJson(inventoryItemId);
+    await this.updateInventoryItemMapJson(inventoryItemId, logiwaItem);
     return this.inventoryItemIdMap[inventoryItemId]?.inventoryItemPackTypeId;
   }
 
@@ -352,8 +353,8 @@ export class LogiwaService {
     return Readable.from(buffer);
   }
 
-  private async updateInventoryItemMapJson(inventoryItemId: string): Promise<void> {
-    const { Data: [inventoryItem] } = await this.inventoryItemSearch({ id: Number(inventoryItemId) });
+  private async updateInventoryItemMapJson(inventoryItemId: string, logiwaItem?: any): Promise<void> {
+    const { Data: [inventoryItem] } = logiwaItem ? { Data: [logiwaItem] } : await this.inventoryItemSearch({ id: Number(inventoryItemId) });
     if (inventoryItem) {
       const inventoryItemPackTypeId: number = await this.inventoryItemPackTypeSearch(inventoryItemId).then(({ Data: [inventoryItemPackType] }) => inventoryItemPackType.ID);
       this.inventoryItemIdMap[inventoryItemId] = {
