@@ -319,6 +319,7 @@ export class OrdersService {
               });
             }
             break;
+
           case ChannelType.WALMART:
             await this.updateWalmartTrackingNo(storeType, order.channelOrderCode, order.trackingNo);
             break;
@@ -341,6 +342,7 @@ export class OrdersService {
   }
 
   private async updateAmazonTrackingNo(store: StoreType, updateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]): Promise<void> {
+    this.logger.log(`updateAmazonTrackingNo ${store} tracking number with ${updateOrderFulfillmentRequests.length} orders`);
     const createFeedResponse: AmazonSPApiCreateFeedResponse|string = await this.amazonSPApiService.updateOrderFulfillmentTracking(store, updateOrderFulfillmentRequests);
 
     if ((createFeedResponse as AmazonSPApiCreateFeedResponse).payload?.feedId) {

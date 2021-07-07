@@ -87,7 +87,7 @@ export class InventoriesService {
     
     while (true) {
       const { Data: logiwaItems } = await this.logiwaService.inventoryItemSearch(logiwaInventoryItemSearchDto);
-    
+
       const createInventories: CreateInventoryDto[] = [];
       for (let i = 0; i < logiwaItems.length; i++) {
         const logiwaItem = logiwaItems[i];
@@ -96,7 +96,7 @@ export class InventoriesService {
           continue;
         }
 
-        const inventoryItemPackTypeId = this.logiwaService.getLogiwaInventoryItemPackTypeId(logiwaItem.ID);
+        const inventoryItemPackTypeId = await this.logiwaService.getLogiwaInventoryItemPackTypeId(logiwaItem.ID, logiwaItem);
         const inventoryItemPackType = await this.logiwaService.inventoryItemPackTypeGet(`${inventoryItemPackTypeId}`);
 
         const createInventoryDto = new CreateInventoryDto();
@@ -116,7 +116,7 @@ export class InventoriesService {
 
         createInventories.push(createInventoryDto);
       }
-      
+
       try {
         const inventories = await this.createBatch(createInventories);
         this.logger.log(
@@ -124,6 +124,7 @@ export class InventoriesService {
         );
       } catch (error) {
         this.logger.log(`Failed to store inventory data on page ${logiwaInventoryItemSearchDto.selectedPageIndex}/${logiwaItems[0].PageCount}`);
+        this.logger.log(error);
       }
 
       if (logiwaInventoryItemSearchDto.selectedPageIndex === logiwaItems[0].PageCount) {
