@@ -291,6 +291,11 @@ export class ListingsService {
       await this.amazonSPApiService.updateListingsItemQuantity(StoreType.HAB, habAmazonSPApiUpdateListingsItemQuantityRequests);
     }
 
+    if (maAmazonSPApiUpdateListingsItemQuantityRequests.length > 0) {
+      this.logger.log(`Updating ${ChannelType.AMAZON} ${StoreType.MA} ${maAmazonSPApiUpdateListingsItemQuantityRequests.length} items quantity`);
+      await this.amazonSPApiService.updateListingsItemQuantity(StoreType.MA, maAmazonSPApiUpdateListingsItemQuantityRequests);
+    }
+
     if (habWalmartApiUpdateInventories.length > 0) {
       this.logger.log(`Updating ${ChannelType.WALMART} ${StoreType.HAB} ${habWalmartApiUpdateInventories.length} items quantity`);
       await this.walmartApiService.bulkItemInventoryUpdate(StoreType.HAB, habWalmartApiUpdateInventories);

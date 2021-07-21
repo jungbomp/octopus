@@ -300,6 +300,7 @@ export class OrdersService {
 
     this.logger.log(`Starting to update tracking number to each channel with ${filteredOrders.length} orders`);
     const amazonHabUpdateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[] = [];
+    const amazonMaUpdateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[] = [];
 
     for (let i = 0; i < filteredOrders.length; i++) {
       const order: Orders = filteredOrders[i];
@@ -309,14 +310,18 @@ export class OrdersService {
       try {
         switch (channelType) {
           case ChannelType.AMAZON:
+            const updateOrderFulfillmentRequest: AmazonSPApiUpdateOrderFulfillmentRequest = {
+              amazonOrderId: order.channelOrderCode,
+              fulfillmentDate: getCurrentDate().toISOString(),
+              carrierCode: AmazonSPFulfillmentCarrierCode.USPS,
+              shippingMethod: 'USPS - First-Class Mail',
+              shipperTrackingNumber: order.trackingNo,
+            }
+
             if (storeType === StoreType.HAB) {
-              amazonHabUpdateOrderFulfillmentRequests.push({
-                amazonOrderId: order.channelOrderCode,
-                fulfillmentDate: getCurrentDate().toISOString(),
-                carrierCode: AmazonSPFulfillmentCarrierCode.USPS,
-                shippingMethod: 'USPS - First-Class Mail',
-                shipperTrackingNumber: order.trackingNo,
-              });
+              amazonHabUpdateOrderFulfillmentRequests.push(updateOrderFulfillmentRequest);
+            } else {
+              amazonMaUpdateOrderFulfillmentRequests.push(updateOrderFulfillmentRequest);
             }
             break;
 
@@ -336,6 +341,10 @@ export class OrdersService {
 
     if (amazonHabUpdateOrderFulfillmentRequests.length > 0) {
       this.updateAmazonTrackingNo(StoreType.HAB, amazonHabUpdateOrderFulfillmentRequests);
+    }
+
+    if (amazonMaUpdateOrderFulfillmentRequests.length > 0) {
+      this.updateAmazonTrackingNo(StoreType.MA, amazonMaUpdateOrderFulfillmentRequests);
     }
 
     this.logger.log(`Completed to update tracking number to each channel`);
