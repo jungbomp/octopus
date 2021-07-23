@@ -262,19 +262,18 @@ export class OrdersService {
             createOrderDto.orderPrice = logiwaOrder.TotalSalesGrossPrice;
             createOrderDto.trackingNo = logiwaOrder.CarrierTrackingNumber.trim().length > 0 ? logiwaOrder.CarrierTrackingNumber : null;
             createOrderDto.orderItems = orderItems.reduce((acc: CreateOrderItemDto[], cur: CreateOrderItemDto): CreateOrderItemDto[] => {
-                const item = acc.find((item) => item.listingSku === cur.listingSku);
-                if ((item || null) !== null) {
-                  item.unitQuantity = item.unitQuantity + 1;
-                } else {
-                  acc.push(cur);
-                }
-                return acc;
-              },
-              []
-            );
+              const item = acc.find((item) => item.listingSku === cur.listingSku);
+              if ((item || null) !== null) {
+                item.unitQuantity = item.unitQuantity + 1;
+              } else {
+                acc.push(cur);
+              }
+              return acc;
+            }, []);
 
             return createOrderDto;
-          }));
+          })
+      );
 
       try {
         const created = await this.createBatch(createOrders);
@@ -339,27 +338,24 @@ export class OrdersService {
       }
     }
 
-    if (amazonHabUpdateOrderFulfillmentRequests.length > 0) {
-      this.updateAmazonTrackingNo(StoreType.HAB, amazonHabUpdateOrderFulfillmentRequests);
-    }
-
-    if (amazonMaUpdateOrderFulfillmentRequests.length > 0) {
-      this.updateAmazonTrackingNo(StoreType.MA, amazonMaUpdateOrderFulfillmentRequests);
-    }
+    this.updateAmazonTrackingNo(StoreType.HAB, amazonHabUpdateOrderFulfillmentRequests);
+    this.updateAmazonTrackingNo(StoreType.MA, amazonMaUpdateOrderFulfillmentRequests);
 
     this.logger.log(`Completed to update tracking number to each channel`);
   }
 
   private async updateAmazonTrackingNo(store: StoreType, updateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]): Promise<void> {
     this.logger.log(`updateAmazonTrackingNo ${store} tracking number with ${updateOrderFulfillmentRequests.length} orders`);
-    const createFeedResponse: AmazonSPApiCreateFeedResponse|string = await this.amazonSPApiService.updateOrderFulfillmentTracking(store, updateOrderFulfillmentRequests);
+    if (updateOrderFulfillmentRequests.length > 0) {
+      const createFeedResponse: AmazonSPApiCreateFeedResponse|string = await this.amazonSPApiService.updateOrderFulfillmentTracking(store, updateOrderFulfillmentRequests);
 
-    if ((createFeedResponse as AmazonSPApiCreateFeedResponse).payload?.feedId) {
-      const procDate = getCurrentDate();
+      if ((createFeedResponse as AmazonSPApiCreateFeedResponse).payload?.feedId) {
+        const procDate = getCurrentDate();
 
-      updateOrderFulfillmentRequests.forEach(({ amazonOrderId }: AmazonSPApiUpdateOrderFulfillmentRequest) => {
-        this.updateOrdersProcDttm(amazonOrderId, findMarketId(ChannelType.AMAZON, store), procDate)
-      });
+        updateOrderFulfillmentRequests.forEach(({ amazonOrderId }: AmazonSPApiUpdateOrderFulfillmentRequest) => {
+          this.updateOrdersProcDttm(amazonOrderId, findMarketId(ChannelType.AMAZON, store), procDate)
+        });
+      }
     }
   }
 

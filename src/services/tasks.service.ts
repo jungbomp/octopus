@@ -4,7 +4,7 @@ import { ClockInService } from './clockIn.service';
 import { InventoriesService } from './inventories.service';
 import { OrdersService } from './orders.service';
 import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto'
-import { DateTimeUtil, getCurrentDate, getDttmFromDate, subtractDate } from 'src/utils/dateTime.util';
+import { getCurrentDate, getDttmFromDate, subtractDate } from 'src/utils/dateTime.util';
 import { LogiwaInventoryitemSearchDto } from 'src/models/dto/logiwaInventoryItemSearch.dto';
 import { ListingsService } from './listings.service';
 
@@ -17,7 +17,6 @@ export class TasksService {
     private readonly inventoriesService: InventoriesService,
     private readonly listingsService: ListingsService,
     private readonly ordersService: OrdersService,
-    private readonly dateTimeUtil: DateTimeUtil,
   ) {}
 
   @Cron('0 5 1 * * 1')
@@ -29,15 +28,15 @@ export class TasksService {
   @Cron('0 50 1-23/3 * * *')
   loadOrderDataFromLogiwa(): void {
     this.logger.log(`triggered loadDataFromLogiwa`);
-    const currentDate = this.dateTimeUtil.getCurrentDate();
-    const threeHoursBefore = this.dateTimeUtil.subtractDate(currentDate, 0, 3, 10, 0);
-    const oneDayBefore = this.dateTimeUtil.subtractDate(currentDate, 1, 0, 0, 0);
+    const currentDate = getCurrentDate();
+    const threeHoursBefore = subtractDate(currentDate, 0, 3, 10, 0);
+    const oneDayBefore = subtractDate(currentDate, 1, 0, 0, 0);
 
     const logiwaOrderSearchDto = new LogiwaOrderSearchDto(0);
-    logiwaOrderSearchDto.lastModifiedDateStart = this.dateTimeUtil.getDttmFromDate(threeHoursBefore);
+    logiwaOrderSearchDto.lastModifiedDateStart = getDttmFromDate(threeHoursBefore);
     logiwaOrderSearchDto.lastModifiedDateEnd = getDttmFromDate(currentDate);
     // this.ordersService.loadOrderDataFromLogiwa(logiwaOrderSearchDto)
-    //   .then(() => this.ordersService.updateTrackingToChannel(oneDayBefore, currentDate));
+    //   .then(() => this.ordersService.updateTrackingToChannel(oneDayBefore, getCurrentDate()));
   }
 
   @Cron('0 0 19 * * *')
@@ -55,7 +54,7 @@ export class TasksService {
   @Cron('0 0,30 * * * *')
   updateListingQuantity(): void {
     this.logger.log(`triggered updateListingQuantity`);
-    const currentDate = this.dateTimeUtil.getCurrentDate();
+    const currentDate = getCurrentDate();
     const thirtyMinutesBefore = subtractDate(currentDate, 0, 0, 31, 0);
     // this.listingsService.updateQuantityToChannel(thirtyMinutesBefore, currentDate);
   }
