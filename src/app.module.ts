@@ -24,7 +24,7 @@ import { LogiwaApiModule } from './modules/logiwaApi.module';
 import { WalmartApiModule } from './modules/walmartApi.module';
 import { EbayApiModule } from './modules/ebayApi.module';
 import { AmazonSPApiModule } from './modules/amazonSPApi.module';
-import { InterchangeableGroupMapsModule } from './modules/interchangeableGroupMaps.module';
+import { InterchangeableGroupsModule } from './modules/interchangeableGroups.module';
 
 @Module({
   imports: [
@@ -120,7 +120,7 @@ import { InterchangeableGroupMapsModule } from './modules/interchangeableGroupMa
         },
         {
           path: '/',
-          module: InterchangeableGroupMapsModule,
+          module: InterchangeableGroupsModule,
         },
       ],
     }]),
@@ -143,7 +143,7 @@ import { InterchangeableGroupMapsModule } from './modules/interchangeableGroupMa
     LogiwaApiModule,
     EbayApiModule,
     AmazonSPApiModule,
-    InterchangeableGroupMapsModule,
+    InterchangeableGroupsModule,
   ],
 })
 export class AppModule {}
