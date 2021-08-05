@@ -1,25 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { AmazonSPApiService } from './amazonSPApi.service';
+import { EbayApiService } from './ebayApi.service';
+import { InterchangeableGroupsService } from './interchangeableGroups.service';
+import { InventoriesService } from './inventories.service';
+import { LogiwaService } from './logiwa.service';
+import { MarketsService } from './markets.service';
+import { WalmartApiService } from './walmartApi.service';
+import { AmazonSPApiUpdateListingsItemQuantityRequest } from '../models/amazonSP/amazonSPApiUpdateListingsItemQuantityRequest';
 import { CreateInventoryDto } from '../models/dto/createInventory.dto';
 import { CreateListingDto, } from '../models/dto/createListing.dto';
 import { EbayApiBulkUpdatePriceQuantityDto } from '../models/dto/ebayApiBulkUpdatePriceQuantity.dto';
 import { LogiwaItemChannelListingSearchDto } from '../models/dto/logiwaItemChannelListingSearch.dto';
 import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto';
 import { WalmartApiUpdateInventoryDto } from '../models/dto/wamartApiUpdateInventory.dto';
+import { InterchangeableGroup } from '../models/interchangeableGroup.entity';
+import { InterchangeableGroupMap } from '../models/interchangeableGroupMap.entity';
 import { Inventory } from '../models/inventory.entity';
 import { Listing } from '../models/listing.entity';
 import { Market } from '../models/market.entity';
-import { AmazonSPApiService } from './amazonSPApi.service';
-import { EbayApiService } from './ebayApi.service';
-import { InventoriesService } from './inventories.service';
-import { LogiwaService } from './logiwa.service';
-import { MarketsService } from './markets.service';
-import { WalmartApiService } from './walmartApi.service';
+
 import { getCurrentDttm, getDttmFromDate } from '../utils/dateTime.util';
 import { findMarketId, findStoreType, toChannelTypeFromMarketId, toStoreTypeFromMarketId } from '../utils/types.util';
 import { ChannelType, StoreType } from '../types';
-import { AmazonSPApiUpdateListingsItemQuantityRequest } from 'src/models/amazonSP/amazonSPApiUpdateListingsItemQuantityRequest';
 
 @Injectable()
 export class ListingsService {
@@ -30,6 +34,7 @@ export class ListingsService {
     private readonly listingsRepository: Repository<Listing>,
     private readonly amazonSPApiService: AmazonSPApiService,
     private readonly ebayApiService: EbayApiService,
+    private readonly interchangeableGroupsService: InterchangeableGroupsService,
     private readonly inventoiesService: InventoriesService,
     private readonly logiwaService: LogiwaService,
     private readonly marketsService: MarketsService,
@@ -202,12 +207,17 @@ export class ListingsService {
 
       logiwaOrderSearchDto.selectedPageIndex = logiwaOrderSearchDto.selectedPageIndex + 1;
     }
+
+    const interchangeableGroupMaps: InterchangeableGroupMap[] = await this.interchangeableGroupsService.findAllMappings();
+    const interchangeableQtyMap: Map<string, InterchangeableGroup> = interchangeableGroupMaps.reduce(
+      (map: Map<string, InterchangeableGroup>, interchangeableGroupMap: InterchangeableGroupMap): Map<string, InterchangeableGroup> =>
+        map.set(interchangeableGroupMap.inventory.stdSku, interchangeableGroupMap.interchangeableGroup),
+        new Map<string, InterchangeableGroup>()
+    );
     
     const skuQuantityMap: Map<string, number> = [...updatedStdSku].reduce(
       (map: Map<string, number>, stdSku: string): Map<string, number> =>
-      availableStockInfoMap.has(stdSku)
-      ? map.set(stdSku, Math.max(0, availableStockInfoMap.get(stdSku)))
-      : map,
+        map.set(stdSku, Math.max(Math.max(0, availableStockInfoMap.get(stdSku) ?? 0), interchangeableQtyMap.get(stdSku)?.quantity ?? 0)),
       new Map<string, number>());
       
     this.logger.log(`Loaded ${updatedStdSku.size} ordered stdSku from logiwa`);
@@ -219,10 +229,19 @@ export class ListingsService {
 
   async updateAllAvailableQuantityToChannel(): Promise<void> {
     this.logger.log('Update all available quantity to each channel between');
+
+    const interchangeableGroupMaps: InterchangeableGroupMap[] = await this.interchangeableGroupsService.findAllMappings();
+    const interchangeableQtyMap: Map<string, InterchangeableGroup> = interchangeableGroupMaps.reduce(
+      (map: Map<string, InterchangeableGroup>, interchangeableGroupMap: InterchangeableGroupMap): Map<string, InterchangeableGroup> =>
+        map.set(interchangeableGroupMap.inventory.stdSku, interchangeableGroupMap.interchangeableGroup),
+        new Map<string, InterchangeableGroup>()
+    );
     
     const availableStockInfoMap: Map<string, number> = await this.logiwaService.getAllAvailableToPromiseReportList().then(availableReportList =>
       availableReportList.reduce((acc: Map<string, number>, availableReport: any): Map<string, number> => 
-        acc.set(availableReport.Code, availableReport.StockQuantity - availableReport.OrderQuantity), new Map<string, number>()));
+        acc.set(availableReport.Code,
+          Math.max(Math.max(0, availableReport.StockQuantity - availableReport.OrderQuantity), interchangeableQtyMap.get(availableReport.Code)?.quantity ?? 0)),
+          new Map<string, number>()));
 
     await this.updateStdSkuQuantityToEachChannel(availableStockInfoMap);
 

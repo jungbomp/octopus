@@ -3,10 +3,11 @@ import { Cron, Interval, Timeout } from '@nestjs/schedule';
 import { ClockInService } from './clockIn.service';
 import { InventoriesService } from './inventories.service';
 import { OrdersService } from './orders.service';
-import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto'
-import { getCurrentDate, getDttmFromDate, subtractDate } from 'src/utils/dateTime.util';
-import { LogiwaInventoryitemSearchDto } from 'src/models/dto/logiwaInventoryItemSearch.dto';
 import { ListingsService } from './listings.service';
+import { InterchangeableGroupsService } from './interchangeableGroups.service';
+import { LogiwaInventoryitemSearchDto } from '../models/dto/logiwaInventoryItemSearch.dto';
+import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto'
+import { getCurrentDate, getDttmFromDate, subtractDate } from '../utils/dateTime.util';
 
 @Injectable()
 export class TasksService {
@@ -17,6 +18,7 @@ export class TasksService {
     private readonly inventoriesService: InventoriesService,
     private readonly listingsService: ListingsService,
     private readonly ordersService: OrdersService,
+    private readonly interchangeableGroupsService: InterchangeableGroupsService,
   ) {}
 
   @Cron('0 5 1 * * 1')
@@ -48,7 +50,8 @@ export class TasksService {
       lastModifiedDateStart: getDttmFromDate(yesterDay) // yyyymmddhh24miss
     };
     // this.inventoriesService.loadInventoryDataFromLogiwa(logiwaInventoryitemSearchDto)
-    //   .then(() => this.listingsService.loadListingDataFromLogiwa({}));
+    //   .then(() => this.listingsService.loadListingDataFromLogiwa({})
+    //     .then(() => this.interchangeableGroupsService.updateInterchangeableQuantities()));
   }
 
   @Cron('0 0,30 * * * *')

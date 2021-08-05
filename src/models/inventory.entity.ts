@@ -1,5 +1,4 @@
 import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { InterchangeableGroup } from './interchangeableGroup.entity';
 import { Product } from './product.entity';
 import { StdSize } from './stdSize.entity';
 
@@ -67,12 +66,4 @@ export class Inventory {
 
   @Column({ type: 'char', length: 1 })
   validYn: string;
-
-  @ManyToOne(() => InterchangeableGroup, interchangeableGroup => interchangeableGroup.inventory, {
-    nullable: true,
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn()
-  interchangeableGroup: InterchangeableGroup;
 }

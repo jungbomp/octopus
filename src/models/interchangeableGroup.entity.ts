@@ -2,7 +2,7 @@ import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { Inventory } from './inventory.entity';
 
 @Entity()
-export class InterchangeableGroup{
+export class InterchangeableGroup {
   @ManyToOne(() => Inventory, inventory => inventory.stdSku, {
     primary: true,
     nullable: false,

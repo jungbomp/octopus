@@ -22,7 +22,7 @@ export class CreateInventoryDto {
   validYn: string;
   interchangeableGroupStdSku?: string;
 
-  static toInventoryEntity(dto: CreateInventoryDto, product: Product, stdSize: StdSize, interchangeableGroup?: InterchangeableGroup): Inventory {
+  static toInventoryEntity(dto: CreateInventoryDto, product: Product, stdSize: StdSize): Inventory {
     const inventory = new Inventory();
     inventory.stdSku = dto.stdSku;
     inventory.productSupplier = dto.productSupplier;
@@ -41,7 +41,6 @@ export class CreateInventoryDto {
     inventory.validYn = dto.validYn;
     inventory.product = product;
     inventory.stdSize = stdSize;
-    inventory.interchangeableGroup = interchangeableGroup;
 
     return inventory;
   }
@@ -64,7 +63,6 @@ export class CreateInventoryDto {
     dto.sizeCode = inventory.sizeCode;
     dto.validYn = inventory.validYn;
     dto.productCode = inventory.product?.productCode;
-    dto.interchangeableGroupStdSku = inventory.interchangeableGroup?.inventory.stdSku
 
     return dto;
   }
