@@ -12,12 +12,14 @@ import { WalmartApiModule } from './walmartApi.module';
 import { Listing } from '../models/listing.entity';
 import { ListingsService } from '../services/listings.service';
 import { ListingsController } from '../controllers/listings.controller';
+import { InterchangeableGroupsModule } from './interchangeableGroups.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Listing]),
     AmazonSPApiModule,
     EbayApiModule,
+    InterchangeableGroupsModule,
     InventoriesModule,
     MarketsModule,
     LogiwaApiModule,

@@ -1,3 +1,4 @@
+import { InterchangeableGroup } from '../interchangeableGroup.entity';
 import { Inventory } from '../inventory.entity';
 import { Product } from '../product.entity';
 import { StdSize } from '../stdSize.entity';
@@ -19,6 +20,7 @@ export class CreateInventoryDto {
   productCode: string;
   sizeCode: string;
   validYn: string;
+  interchangeableGroupStdSku?: string;
 
   static toInventoryEntity(dto: CreateInventoryDto, product: Product, stdSize: StdSize): Inventory {
     const inventory = new Inventory();
