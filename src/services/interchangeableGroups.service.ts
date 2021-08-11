@@ -137,7 +137,7 @@ export class InterchangeableGroupsService {
 
     const createInterchangeableGroupDtos = await Promise.all(interchangeableGroups.map(
       async (interchangeableGroup: InterchangeableGroup): Promise<CreateInterchangeableGroupDto> => {
-        const interchangeableGroupMaps = await this.findMappingsByStdSku(interchangeableGroup.inventory.stdSku);
+        const interchangeableGroupMaps = await this.findMappings(interchangeableGroup.inventory.stdSku);
         
         const createInterchangeableGroupDto = new CreateInterchangeableGroupDto();
         createInterchangeableGroupDto.stdSku = interchangeableGroup.inventory.stdSku;
@@ -151,5 +151,6 @@ export class InterchangeableGroupsService {
     );
 
     await this.createBatch(createInterchangeableGroupDtos);
+    this.logger.log('Updated InterchangeableGroup quantities');
   }
 }
