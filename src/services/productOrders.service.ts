@@ -417,13 +417,12 @@ export class ProductOrdersService {
       return {
         to: receiver.email.split(" ").map((addr: string) => ({ email: addr, name: receiver.name })),
         cc: [
-          {email: 'jcsky.jaik@gmail.com', name: 'jai'},
-          {email: 'jcsky.louis@gmail.com', name: 'louis'},
-          {email: 'jcsky.edwardp@gmail.com', name: 'edwardp'},
-          {email: 'jcsky.daniell@gmail.com', name: 'daniell'},
-          {email: 'jcsky.acct@gmail.com', name: 'acct'},
-          {email: 'jungbom@hatandbeyond.com', name: 'acct'},
-          {email: 'jcsky.tedk@gmail.com', name: 'Ted'}
+          {email: 'jcsky.jaik@gmail.com', name: 'Jai'},
+          {email: 'jcsky.louis@gmail.com', name: 'Louis'},
+          {email: 'jcsky.acct@gmail.com', name: 'Accounting'},
+          {email: 'jungbom@hatandbeyond.com', name: 'Dev'},
+          {email: 'jcsky.tedk@gmail.com', name: 'Ted'},
+          {email: 'angelinal@hatandbeyond.com', name: 'Angelina'}
         ],
         from: {email: this.orderFormConfig.defaultSenderEmailAddress, name: this.orderFormConfig.defaultSenderName},
         subject: `${mm}/${dd}/${yyyy} ${ordersFrom} ORDER - Order ${orderSeq}`,
