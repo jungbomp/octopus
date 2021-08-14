@@ -9,7 +9,6 @@ import { LogiwaService } from './logiwa.service';
 import { MarketsService } from './markets.service';
 import { WalmartApiService } from './walmartApi.service';
 import { AmazonSPApiUpdateListingsItemQuantityRequest } from '../models/amazonSP/amazonSPApiUpdateListingsItemQuantityRequest';
-import { CreateInventoryDto } from '../models/dto/createInventory.dto';
 import { CreateListingDto, } from '../models/dto/createListing.dto';
 import { EbayApiBulkUpdatePriceQuantityDto } from '../models/dto/ebayApiBulkUpdatePriceQuantity.dto';
 import { LogiwaItemChannelListingSearchDto } from '../models/dto/logiwaItemChannelListingSearch.dto';
@@ -247,7 +246,6 @@ export class ListingsService {
       acc.set(inventory.stdSku,
         Math.max(inventory.productQty, interchangeableQtyMap.get(inventory.stdSku)?.quantity ?? 0)),
       new Map<string, number>());
-      
 
     await this.updateStdSkuQuantityToEachChannel(availableStockInfoMap);
 
@@ -265,7 +263,7 @@ export class ListingsService {
     const availableStdSkus: string[] = [...availableSkuQuantityMap.keys()];
     this.logger.log('Look up listingd and inventories for each available stdSku');
     const listingsList: Listing[][] = await Promise.all(availableStdSkus.map(async (stdSku: string): Promise<Listing[]> => await this.findByInventory(stdSku)));
-    
+
     this.logger.log('Create DTO list for requesting each channel and inventory');
     availableStdSkus.forEach((stdSku: string, i: number) => {
       const quantity = availableSkuQuantityMap.get(stdSku);

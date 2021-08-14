@@ -77,6 +77,7 @@ export class TasksService {
       lastModifiedDateStart: getDttmFromDate(yesterDay) // yyyymmddhh24miss
     };
     // this.inventoriesService.loadInventoryDataFromLogiwa(logiwaInventoryitemSearchDto)
+    //   .then(() => this.interchangeableGroupsService.updateInterchangeableQuantities())
     //   .then(() => this.listingsService.updateAllAvailableQuantityToChannel());
   }
 
