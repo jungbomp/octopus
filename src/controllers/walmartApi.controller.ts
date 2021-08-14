@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Param, Put, Res } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, Put, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { WalmartApiService } from 'src/services/walmartApi.service';
 import { WalmartApiUpdateInventoryDto } from 'src/models/dto/wamartApiUpdateInventory.dto';
@@ -20,14 +20,29 @@ export class WalmartApiController {
     return this.walmartApiService.updateInventory(store, walmartApiUpdateInventoryDto);
   }
 
+  @Get('inventories')
+  getInventories(@Param('store') store: StoreType, @Query('limit') limit?: string, @Query('nextCursor') nextCursor?: string): Promise<any> {
+    return this.walmartApiService.getInventories(store, limit ? Number(limit) : undefined, nextCursor);
+  }
+
+  @Get('all-inventories')
+  getAllInventories(@Param('store') store: StoreType): Promise<any[]> {
+    return this.walmartApiService.getAllInventories(store);
+  }
+
   @Get('feed/:feedId?')
   getFeedStatus(@Param('store') store: StoreType, @Param('feedId') feedId: string): Promise<any> {
     return this.walmartApiService.getFeedStatus(store, feedId);
   }
 
-  @Get('get-items/:nextCursor?')
+  @Get('items/:nextCursor?')
   walmartGetItems(@Param('store') store: StoreType, @Param('nextCursor') nextCursor?: string): Promise<any> {
     return this.walmartApiService.getItems(store, nextCursor);
+  }
+
+  @Get('all-items')
+  walmartGetAllItems(@Param('store') store: StoreType): Promise<any> {
+    return this.walmartApiService.getAllItems(store);
   }
 
   @Get('export-items')

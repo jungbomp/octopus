@@ -93,3 +93,14 @@ export enum AmazonSPFulfillmentCarrierCode {
   FedEx = 'FedEx',
   DHL = 'DHL',
 }
+
+export enum WalmartItemLifeCycleStatus {
+  ACTIVE = 'ACTIVE',
+  ARCHIVED = 'ARCHIVED',
+  RETIRED = 'RETIRED',
+}
+
+export enum WalmartItemPublishedStatus {
+  PUBLISHED = 'PUBLISHED',
+  UNPUBLISHEd = 'UNPUBLISHED',
+}
