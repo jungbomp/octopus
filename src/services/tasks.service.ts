@@ -58,14 +58,26 @@ export class TasksService {
   updateListingQuantity(): void {
     this.logger.log(`triggered updateListingQuantity`);
     const currentDate = getCurrentDate();
+    const yesterDay: Date = subtractDate(currentDate, 1, 0, 0, 0);
+    const logiwaInventoryitemSearchDto: LogiwaInventoryitemSearchDto = {
+      lastModifiedDateStart: getDttmFromDate(yesterDay) // yyyymmddhh24miss
+    };
+
     const thirtyMinutesBefore = subtractDate(currentDate, 0, 0, 31, 0);
-    // this.listingsService.updateQuantityToChannel(thirtyMinutesBefore, currentDate);
+    // this.inventoriesService.loadInventoryDataFromLogiwa(logiwaInventoryitemSearchDto)
+    //   .then(() => this.listingsService.updateQuantityToChannel(thirtyMinutesBefore, currentDate));
   }
 
-  @Cron('0 15 5,18 * * *')
+  @Cron('0 0,30 * * * *')
   updateAllAvailableQuantityToChannel(): void {
     this.logger.log(`triggered updateAllAvailableQuantityToChannel`);
-    // this.listingsService.updateAllAvailableQuantityToChannel();
+    const currentDate = getCurrentDate();
+    const yesterDay: Date = subtractDate(currentDate, 1, 0, 0, 0);
+    const logiwaInventoryitemSearchDto: LogiwaInventoryitemSearchDto = {
+      lastModifiedDateStart: getDttmFromDate(yesterDay) // yyyymmddhh24miss
+    };
+    // this.inventoriesService.loadInventoryDataFromLogiwa(logiwaInventoryitemSearchDto)
+    //   .then(() => this.listingsService.updateAllAvailableQuantityToChannel());
   }
 
   // @Interval(10000)

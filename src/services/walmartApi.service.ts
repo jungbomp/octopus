@@ -4,8 +4,9 @@ import axios, { Method } from 'axios';
 import * as FormData from 'form-data';
 import { Readable } from 'stream';
 import { WalmartApiUpdateInventoryDto } from 'src/models/dto/wamartApiUpdateInventory.dto';
-import { StoreType } from 'src/types';
+import { StoreType, WalmartItemLifeCycleStatus, WalmartItemPublishedStatus } from 'src/types';
 import { guid } from '../utils/guid.util';
+import { getQueryString } from 'src/utils/request.util';
 
 @Injectable()
 export class WalmartApiService {
@@ -24,16 +25,58 @@ export class WalmartApiService {
     this.maCroixToken = null;
   }
 
-  async getItems(store: StoreType, nextCursor?: string): Promise<any> {
-    return await this.walmartApiCall(`items?limit=200${nextCursor ? `&nextCursor=${encodeURIComponent(nextCursor)}` : ''}`, 'get', {}, null, store);
+  async getItems(store: StoreType, nextCursor?: string, lifeCycleStatus?: WalmartItemLifeCycleStatus, publishedStatus?: WalmartItemPublishedStatus): Promise<any> {
+    const queryParam = new Map<string, string>([['limit', '20'], ['nextCursor', nextCursor ?? '*']]);
+    if (lifeCycleStatus) {
+      queryParam.set('lifeCycleStatus', encodeURIComponent(lifeCycleStatus));
+    }
+    if (publishedStatus) {
+      queryParam.set('publishedStatus', encodeURIComponent(publishedStatus));
+    }
+
+    return await this.walmartApiCall('items', 'get', {}, null, store, queryParam);
+  }
+
+  async getAllItems(store: StoreType): Promise<any[]> {
+    this.logger.log('getAllItems');
+    let items = [];
+    let response = { nextCursor: undefined, ItemResponse: [], totalItems: 0 };
+    do {
+      response = await this.getItems(store, response.nextCursor, WalmartItemLifeCycleStatus.ACTIVE, WalmartItemPublishedStatus.PUBLISHED);
+      items = [...items, ...response.ItemResponse];
+      this.logger.log(`Retrieve walmart ${store} item ${items.length}/${response.totalItems}`);
+    } while (response.nextCursor);
+
+    return items;
   }
 
   async getInventory(store: StoreType, sku: string): Promise<any> {
-    return await this.walmartApiCall(`inventory?sku=${encodeURIComponent(sku)}`, 'get', {}, null, store);
+    return await this.walmartApiCall('inventory', 'get', {}, null, store, new Map<string, string>([['sku', sku]]));
   }
 
   async getInventories(store: StoreType, limit?: number, nextCursor?: string): Promise<any> {
-    return;
+    const queryParam = new Map<string, string>();
+    if (limit) {
+      queryParam.set('limit', `${limit}`);
+    }
+    if (nextCursor) {
+      queryParam.set('nextCursor', nextCursor);
+    }
+
+    return await this.walmartApiCall('inventories', 'get', {}, null, store, queryParam);
+  }
+
+  async getAllInventories(store: StoreType): Promise<any[]> {
+    this.logger.log('getAllInventories');
+    let  inventories = [];
+    let response = { meta: { nextCursor: undefined, totalCount: 0 }, elements: { inventories: [] } };
+    do {
+      response = await this.getInventories(store, 50, response.meta.nextCursor);
+      inventories = [...inventories, ...response.elements.inventories];
+      this.logger.log(`Retrieve walmart ${store} inventories ${inventories.length}/${response.meta.totalCount}`);
+    } while (response.meta?.nextCursor);
+
+    return inventories;
   }
 
   async updateInventory(store: StoreType, {sku, amount }: WalmartApiUpdateInventoryDto): Promise<any> {
@@ -45,7 +88,7 @@ export class WalmartApiService {
       }
     }
 
-    return await this.walmartApiCall(`inventory?sku=${encodeURIComponent(sku)}`, 'put', {}, JSON.stringify(data), store);
+    return await this.walmartApiCall('inventory', 'put', {}, JSON.stringify(data), store, new Map<string, string>([['sku', sku]]));
   }
 
   async bulkItemInventoryUpdate(store: StoreType, walmartApiUpdateInventories: WalmartApiUpdateInventoryDto[]): Promise<any> {
@@ -71,11 +114,16 @@ export class WalmartApiService {
       ...formData.getHeaders()
     }
 
-    return await this.walmartApiCall('feeds?feedType=inventory', 'post', headers, formData, store);
+    return await this.walmartApiCall('feeds', 'post', headers, formData, store, new Map<string, string>([['feedType', 'inventory']]));
   }
 
   async getFeedStatus(store: StoreType, feedId?: string): Promise<any> {
-    return await this.walmartApiCall(`feeds${feedId ? `?feedId=${encodeURIComponent(feedId)}` : ''}`, 'get', {}, null, store);
+    const queryParam = new Map<string, string>();
+    if (feedId) {
+      queryParam.set('feedId', feedId);
+    }
+
+    return await this.walmartApiCall('feeds', 'get', {}, null, store, queryParam);
   }
 
   async getOrder(orderNumber: string, store: StoreType): Promise<any> {
@@ -135,7 +183,7 @@ export class WalmartApiService {
     const headers: string[] = ['Store', 'SKU', 'wpid', 'upc', 'gtin', 'productName', 'productType', 'price', 'publishedStatus', 'lifecycleStatus'];
     const bodies: string[][] = [];
     
-    const items = await this.getAllItemsWalmart(store);
+    const items = await this.getAllItems(store);
     items.forEach(item => bodies.push([store, item.sku, item.wpid, item.upc, item.gtin, item.productName, item.priductType, item.price.amount, item.publishedStatus, item.lifecycleStatus]));
 
     const tsvRows = [headers.join('\t'), ...bodies.map((body: string[]): string => body.join('\t'))];
@@ -143,27 +191,14 @@ export class WalmartApiService {
     return Readable.from(buffer);
   }
 
-  private async getAllItemsWalmart(store: StoreType): Promise<any[]> {
-    this.logger.log('getAllItemsWalmart');
-    let items = [];
-    let response = { nextCursor: undefined, ItemResponse: [], totalItems: 0 };
-    do {
-      response = await this.getItems(store, response.nextCursor );
-      items = [...items, ...response.ItemResponse];
-      this.logger.log(`Retrieve walmart ${store} item ${items.length}/${response.totalItems}`);
-    } while (response.nextCursor);
-
-    return items;
-  }
-
-  private async walmartApiCall(url: string, method: Method, headers, data: any, store: StoreType, setAccessToken = true): Promise<any> {
+  private async walmartApiCall(url: string, method: Method, headers, data: any, store: StoreType, queryParam?: Map<string, string>, setAccessToken = true): Promise<any> {
     const clientToken: WalmartApiClientTokenType = store === StoreType.HAB ? this.walmartApiConfig.habClientToken : this.walmartApiConfig.maCroixClientToken;
     const { access_token } = setAccessToken ? await this.authorize(store) : { access_token: null };
 
     try {
       const res = await axios({
         method,
-        url: `${this.walmartApiConfig.baseUrl}/${url}`,
+        url: `${this.walmartApiConfig.baseUrl}/${url}${queryParam?.size > 0 ? `?${getQueryString(queryParam)}` : ''}`,
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -173,6 +208,7 @@ export class WalmartApiService {
           ...headers,
           ...(access_token ? { 'WM_SEC.ACCESS_TOKEN': access_token } : {})
         },
+        validateStatus: (status: number): boolean => status >= 200 && status < 521,
         data: data
       });
 
@@ -182,7 +218,7 @@ export class WalmartApiService {
           this.logger.log(res.data);
         }
 
-        this.logger.log(res);
+        this.logger.log(res.data);
         throw new Error(res.statusText);
       }
 
@@ -209,7 +245,7 @@ export class WalmartApiService {
     formBody.push(`${encodeURIComponent('grant_type')}=${encodeURIComponent('client_credentials')}`);
     const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
     
-    const token = await this.walmartApiCall('token', 'post', headers, formBody.join('&'), store, false);
+    const token = await this.walmartApiCall('token', 'post', headers, formBody.join('&'), store, undefined, false);
     const walmartApiToken: WalmartApiAccessTokenType = {
       ...token,
       expires: new Date(Date.now() + ((token.expires_in - 5) * 1000))

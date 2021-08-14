@@ -33,6 +33,7 @@ import {
 } from 'src/types';
 
 import { getCurrentDate,  toAmazonDateFormat, toDateFromDateString } from '../utils/dateTime.util';
+import { getQueryString } from '../utils/request.util';
 import { AmazonSPApiListingsFeedMessage } from 'src/models/amazonSP/amazonSPApiListingsFeedMessage';
 import { AmazonSPApiOrderFulfillmentFeedMessage } from 'src/models/amazonSP/amazonSPApiOrderFulfillmentFeedMessage';
 
@@ -442,11 +443,6 @@ export class AmazonSPApiService {
     ].join('/');
   }
 
-  private getQueryString(queryParams: Map<string, string>): string {
-    const keys = [...queryParams.keys()].sort();
-    return keys.map((key: string) => `${encodeURIComponent(key)}=${encodeURIComponent(queryParams.get(key))}`).join('&');
-  }
-
   private signedHeaders(): string[] {
     // return [ 'host', 'user-agent', 'x-amz-access-token', 'x-amz-date' ];
     return [ 'host', 'x-amz-access-token', 'x-amz-date' ];
@@ -601,7 +597,7 @@ export class AmazonSPApiService {
     const requestDate: string = toAmazonDateFormat(getCurrentDate());
     const service: string = this.stsService;
 
-    const query: string = this.getQueryString(this.roleCredentialsRequestQuery());
+    const query: string = getQueryString(this.roleCredentialsRequestQuery());
     const roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader = this.getRoleCredentialsCanonicalHeader(query, requestDate);
     const roleCredentialsCanonicalRequest: string = this.getRoleCredentialsCanonicalRequest(query, roleCredentialsCanonicalHeader);
     const signature: string = this.signCanonicalRequest(this.awsIamConfig.secretAccessKey, roleCredentialsCanonicalRequest, requestDate, service);
@@ -647,7 +643,7 @@ export class AmazonSPApiService {
     const service: string = this.apiService;
 
     const canonicalHeader: CanonicalHeader = this.getCanonicalHeader(accessToken, requestDate);
-    const queryString: string = (queryParams && queryParams.size > 0 ? this.getQueryString(queryParams) : undefined);
+    const queryString: string = (queryParams && queryParams.size > 0 ? getQueryString(queryParams) : undefined);
     const canonicalRequest: string = this.getCanonicalRequest(method, url, queryString, canonicalHeader, data);
     const signature: string = this.signCanonicalRequest(credentials.SecretAccessKey, canonicalRequest, requestDate, service);
     

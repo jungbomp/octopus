@@ -177,10 +177,6 @@ export class ListingsService {
     logiwaOrderSearchDto.lastModifiedDateEnd = getDttmFromDate(dateEnd);
     logiwaOrderSearchDto.selectedPageIndex = logiwaOrderSearchDto.selectedPageIndex ?? 1;
 
-    const availableStockInfoMap: Map<string, number> = await this.logiwaService.getAllAvailableToPromiseReportList().then(availableReportList =>
-      availableReportList.reduce((acc: Map<string, number>, availableReport: any): Map<string, number> => 
-        acc.set(availableReport.Code, availableReport.StockQuantity - availableReport.OrderQuantity), new Map<string, number>()));
-
     const updatedStdSku = new Set<string>();
 
     while (true) {
@@ -208,6 +204,10 @@ export class ListingsService {
       logiwaOrderSearchDto.selectedPageIndex = logiwaOrderSearchDto.selectedPageIndex + 1;
     }
 
+    this.logger.log('Retrieve inventories for target stdSku list');
+    const inventories: Inventory[] = await Promise.all([...updatedStdSku].map(async (availableReport: any): Promise<Inventory> => await this.inventoiesService.findOne(availableReport.Code)));
+
+    this.logger.log('Retrieve all interchangeable groups for ');
     const interchangeableGroupMaps: InterchangeableGroupMap[] = await this.interchangeableGroupsService.findAllMappings();
     const interchangeableQtyMap: Map<string, InterchangeableGroup> = interchangeableGroupMaps.reduce(
       (map: Map<string, InterchangeableGroup>, interchangeableGroupMap: InterchangeableGroupMap): Map<string, InterchangeableGroup> =>
@@ -215,9 +215,9 @@ export class ListingsService {
         new Map<string, InterchangeableGroup>()
     );
     
-    const skuQuantityMap: Map<string, number> = [...updatedStdSku].reduce(
-      (map: Map<string, number>, stdSku: string): Map<string, number> =>
-        map.set(stdSku, Math.max(Math.max(0, availableStockInfoMap.get(stdSku) ?? 0), interchangeableQtyMap.get(stdSku)?.quantity ?? 0)),
+    const skuQuantityMap: Map<string, number> = inventories.reduce(
+      (map: Map<string, number>, inventory: Inventory): Map<string, number> =>
+        map.set(inventory.stdSku, Math.max(inventory.productQty, interchangeableQtyMap.get(inventory.stdSku)?.quantity ?? 0)),
       new Map<string, number>());
       
     this.logger.log(`Loaded ${updatedStdSku.size} ordered stdSku from logiwa`);
@@ -228,20 +228,26 @@ export class ListingsService {
   }
 
   async updateAllAvailableQuantityToChannel(): Promise<void> {
-    this.logger.log('Update all available quantity to each channel between');
+    this.logger.log('Update all available quantity to each channel');
 
+    this.logger.log('Build interchangeable quantity map');
     const interchangeableGroupMaps: InterchangeableGroupMap[] = await this.interchangeableGroupsService.findAllMappings();
     const interchangeableQtyMap: Map<string, InterchangeableGroup> = interchangeableGroupMaps.reduce(
       (map: Map<string, InterchangeableGroup>, interchangeableGroupMap: InterchangeableGroupMap): Map<string, InterchangeableGroup> =>
         map.set(interchangeableGroupMap.inventory.stdSku, interchangeableGroupMap.interchangeableGroup),
         new Map<string, InterchangeableGroup>()
     );
+
+    const availableReportList = await this.logiwaService.getAllAvailableToPromiseReportList();
+
+    this.logger.log('Retrieve inventories for availableReports');
+    const inventories: Inventory[] = await Promise.all(availableReportList.map((availableReport: any): Promise<Inventory> => this.inventoiesService.findOne(availableReport.Code)));
     
-    const availableStockInfoMap: Map<string, number> = await this.logiwaService.getAllAvailableToPromiseReportList().then(availableReportList =>
-      availableReportList.reduce((acc: Map<string, number>, availableReport: any): Map<string, number> => 
-        acc.set(availableReport.Code,
-          Math.max(Math.max(0, availableReport.StockQuantity - availableReport.OrderQuantity), interchangeableQtyMap.get(availableReport.Code)?.quantity ?? 0)),
-          new Map<string, number>()));
+    const availableStockInfoMap: Map<string, number> = inventories.filter((inventory: Inventory) => inventory !== undefined).reduce((acc: Map<string, number>, inventory: Inventory, i: number): Map<string, number> =>
+      acc.set(inventory.stdSku,
+        Math.max(inventory.productQty, interchangeableQtyMap.get(inventory.stdSku)?.quantity ?? 0)),
+      new Map<string, number>());
+      
 
     await this.updateStdSkuQuantityToEachChannel(availableStockInfoMap);
 
@@ -249,7 +255,6 @@ export class ListingsService {
   }
 
   private async updateStdSkuQuantityToEachChannel(availableSkuQuantityMap: Map<string, number>): Promise<void> {
-    const createInventories: CreateInventoryDto[] = [];
     const habAmazonSPApiUpdateListingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[] = [];
     const maAmazonSPApiUpdateListingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[] = [];
     const habWalmartApiUpdateInventories: WalmartApiUpdateInventoryDto[] = [];
@@ -260,11 +265,10 @@ export class ListingsService {
     const availableStdSkus: string[] = [...availableSkuQuantityMap.keys()];
     this.logger.log('Look up listingd and inventories for each available stdSku');
     const listingsList: Listing[][] = await Promise.all(availableStdSkus.map(async (stdSku: string): Promise<Listing[]> => await this.findByInventory(stdSku)));
-    const inventories: Inventory[] = await Promise.all(availableStdSkus.map(async (stdSku: string): Promise<Inventory> => await this.inventoiesService.findOne(stdSku)));
-
+    
     this.logger.log('Create DTO list for requesting each channel and inventory');
     availableStdSkus.forEach((stdSku: string, i: number) => {
-      const quantity = Math.max(0, availableSkuQuantityMap.get(stdSku));
+      const quantity = availableSkuQuantityMap.get(stdSku);
     
       const listings: Listing[] = listingsList[i];
       listings.forEach((listing: Listing) => {
@@ -299,10 +303,6 @@ export class ListingsService {
             break;
         }
       });
-
-      const createInventory = CreateInventoryDto.fromInventory(inventories[i]);
-      createInventory.productQty = quantity;
-      createInventories.push(createInventory);
     });
 
     if (habAmazonSPApiUpdateListingsItemQuantityRequests.length > 0) {
@@ -335,11 +335,6 @@ export class ListingsService {
       this.logger.log(`Updating ${maEbayApiBulkUpdatePriceQuantityDtos.length} inventory items into ${ChannelType.EBAY} ${StoreType.MA}`);
       const processed: number = await this.ebayApiService.bulkUpdatePriceQuantity(StoreType.MA, maEbayApiBulkUpdatePriceQuantityDtos);
       this.logger.log(`Updated ${processed}/${maEbayApiBulkUpdatePriceQuantityDtos.length} inventory items into ebay ${StoreType.MA}`);
-    }
-
-    if (createInventories.length > 0) {
-      this.logger.log('Updating inventory quantity');
-      await this.inventoiesService.createBatch(createInventories);
     }
   }
 }

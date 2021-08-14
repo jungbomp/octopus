@@ -104,7 +104,7 @@ export class InventoriesService {
         createInventoryDto.productName = logiwaItem.Description;
         createInventoryDto.productSize = (logiwaItem.Size || '').length > 0 ? logiwaItem.Size : undefined;
         createInventoryDto.productColor = logiwaItem.Brand;
-        createInventoryDto.productQty = availableStockInfoMap.get(logiwaItem.Code);
+        createInventoryDto.productQty = Math.max(availableStockInfoMap.get(logiwaItem.Code), 0);
         createInventoryDto.productPrice = logiwaItem.SalesUnitPrice;
         createInventoryDto.garmentCost = Number(logiwaItem.PurchaseUnitPrice);
         createInventoryDto.productWeight = inventoryItemPackType?.Weight;
