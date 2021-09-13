@@ -91,6 +91,9 @@ export class InventoriesService {
     
     while (true) {
       const { Data: logiwaItems } = await this.logiwaService.inventoryItemSearch(logiwaInventoryItemSearchDto);
+      if (logiwaItems.length < 1) {
+        break;
+      }
 
       const createInventories: CreateInventoryDto[] = [];
       for (let i = 0; i < logiwaItems.length; i++) {
@@ -165,7 +168,7 @@ export class InventoriesService {
           new Map<string, StdSize>()
         )
       );
-  
+
     const productMap: Map<string, Product> = await this.productsService.findAll(false)
       .then((products: Product[]): Map<string, Product> =>
         products.reduce(
@@ -173,7 +176,7 @@ export class InventoriesService {
           new Map<string, Product>()
         )
       );
-    
+
     for (let i = 0; i < stdSkuList.length; i++) {
       const stdSku = stdSkuList[i];
 
