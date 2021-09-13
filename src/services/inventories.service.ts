@@ -12,8 +12,12 @@ import { LogiwaInventoryitemSearchDto } from '../models/dto/logiwaInventoryItemS
 import { UpdateInventoryDto } from '../models/dto/updateInventory.dto';
 
 import { Inventory } from '../models/inventory.entity';
+import { Orders } from '../models/orders.entity';
+import { OrderItem } from '../models/orderItem.entity';
 import { Product } from '../models/product.entity';
 import { StdSize } from '../models/stdSize.entity';
+
+import { getDttmFromDate } from '../utils/dateTime.util';
 
 @Injectable()
 export class InventoriesService {
@@ -97,7 +101,7 @@ export class InventoriesService {
         }
 
         const inventoryItemPackTypeId = await this.logiwaService.getLogiwaInventoryItemPackTypeId(logiwaItem.ID, logiwaItem);
-        const inventoryItemPackType = await this.logiwaService.inventoryItemPackTypeGet(`${inventoryItemPackTypeId}`);
+        const inventoryItemPackType = await this.logiwaService.getLogiwaInventoryItemPackType(logiwaItem.ID, `${inventoryItemPackTypeId}`);
 
         const createInventoryDto = new CreateInventoryDto();
         createInventoryDto.stdSku = logiwaItem.Code.toUpperCase();
@@ -123,15 +127,84 @@ export class InventoriesService {
           `Page Done ${logiwaInventoryItemSearchDto.selectedPageIndex}/${logiwaItems[0].PageCount} with ${inventories.length} inventory records`
         );
       } catch (error) {
-        this.logger.log(`Failed to store inventory data on page ${logiwaInventoryItemSearchDto.selectedPageIndex}/${logiwaItems[0].PageCount}`);
+        this.logger.log(`Failed to store inventory data on page ${logiwaInventoryItemSearchDto.selectedPageIndex}/${logiwaItems[0]?.PageCount ?? 0}`);
         this.logger.log(error);
       }
 
-      if (logiwaInventoryItemSearchDto.selectedPageIndex === logiwaItems[0].PageCount) {
+      if (logiwaInventoryItemSearchDto.selectedPageIndex >= (logiwaItems[0]?.PageCount ?? 0)) {
         break;
       }
 
       logiwaInventoryItemSearchDto.selectedPageIndex = logiwaInventoryItemSearchDto.selectedPageIndex + 1;
+    }
+  }
+
+  async loadInventoryDataFromLogiwaByOrderedItem(orders: Orders[]): Promise<void> {
+    this.logger.log('load inventory data from logiwa filtered by order items');
+
+    const stdSkuList: string[] = [
+      ...(new Set(orders.map(
+        (order: Orders): string[] => order.orderItems.map(
+          (orderItem: OrderItem): string => orderItem.inventory.stdSku)).flat(1)
+        ))
+    ];
+
+    const availableStockInfoMap: Map<string, number> = await this.logiwaAllAvailableToPromiseReportList()
+      .then(availableReportList =>
+        availableReportList.reduce(
+          (acc: Map<string, number>, availableReport: any): Map<string, number> =>
+            acc.set(availableReport.Code, availableReport.StockQuantity - availableReport.OrderQuantity),
+          new Map<string, number>()
+        )
+      );
+
+    const stdSizeMap: Map<string, StdSize> = await this.stdSizesService.findAll()
+      .then((stdSizes: StdSize[]): Map<string, StdSize> =>
+        stdSizes.reduce(
+          (acc: Map<string, StdSize>, stdSize: StdSize): Map<string, StdSize> => acc.set(stdSize.sizeName, stdSize),
+          new Map<string, StdSize>()
+        )
+      );
+  
+    const productMap: Map<string, Product> = await this.productsService.findAll(false)
+      .then((products: Product[]): Map<string, Product> =>
+        products.reduce(
+          (acc: Map<string, Product>, product: Product): Map<string, Product> => acc.set(product.productCode, product),
+          new Map<string, Product>()
+        )
+      );
+    
+    for (let i = 0; i < stdSkuList.length; i++) {
+      const stdSku = stdSkuList[i];
+
+      const logiwaInventoryItemSearchDto: LogiwaInventoryitemSearchDto = { code: stdSku };
+      const { Data: [logiwaItem] } = await this.logiwaService.inventoryItemSearch(logiwaInventoryItemSearchDto);
+
+      const inventoryItemPackTypeId = await this.logiwaService.getLogiwaInventoryItemPackTypeId(logiwaItem.ID, logiwaItem);
+      const inventoryItemPackType = await this.logiwaService.getLogiwaInventoryItemPackType(logiwaItem.ID, `${inventoryItemPackTypeId}`);
+
+      const createInventoryDto = new CreateInventoryDto();
+      createInventoryDto.stdSku = logiwaItem.Code.toUpperCase();
+      createInventoryDto.productName = logiwaItem.Description;
+      createInventoryDto.productSize = (logiwaItem.Size || '').length > 0 ? logiwaItem.Size : undefined;
+      createInventoryDto.productColor = logiwaItem.Brand;
+      createInventoryDto.productQty = Math.max(availableStockInfoMap.get(logiwaItem.Code) ?? 0, 0);
+      createInventoryDto.productPrice = logiwaItem.SalesUnitPrice;
+      createInventoryDto.garmentCost = Number(logiwaItem.PurchaseUnitPrice);
+      createInventoryDto.productWeight = inventoryItemPackType?.Weight;
+      createInventoryDto.productLength = inventoryItemPackType?.Length;
+      createInventoryDto.productWidth = inventoryItemPackType?.Width;
+      createInventoryDto.productHeight = inventoryItemPackType?.Height;
+      createInventoryDto.sizeCode = stdSizeMap.get(logiwaItem.Size)?.sizeCode;
+      createInventoryDto.productCode = productMap.get(logiwaItem.Code.substring(0, logiwaItem.Code.indexOf('-')))?.productCode;
+
+      try {
+        const inventories = await this.create(createInventoryDto);
+        this.logger.log(`Updated ${i+1}/${stdSkuList.length} inventory records`);
+      } catch (error) {
+        this.logger.log(`Failed to store inventory data on page ${i+1}/${stdSkuList.length}`);
+        this.logger.log(error);
+      }
     }
   }
 

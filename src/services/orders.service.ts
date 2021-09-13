@@ -228,8 +228,11 @@ export class OrdersService {
     return { Success: true };
   }
 
-  async loadOrderDataFromLogiwa(searchDto: LogiwaOrderSearchDto): Promise<void> {
+  async loadOrderDataFromLogiwa(searchDto: LogiwaOrderSearchDto): Promise<Orders[]> {
     this.logger.log('load order data from logiwa');
+    let loadedCnt = 0;
+    const startDate: Date = getCurrentDate();
+
     while (true) {
       searchDto.selectedPageIndex = (searchDto.selectedPageIndex || 0) + 1;
 
@@ -260,6 +263,7 @@ export class OrdersService {
             createOrderDto.orderDate = this.logiwaService.toDateStringFromLogiwaDateFormat(logiwaOrder.OrderDate).substring(0, 8);
             createOrderDto.orderQty = logiwaOrder.DetailInfo.reduce((acc: number, cur: any): number => acc + cur.PackQuantity, 0);
             createOrderDto.orderPrice = logiwaOrder.TotalSalesGrossPrice;
+            createOrderDto.orderShippingPrice = logiwaOrder.CarrierRate;
             createOrderDto.trackingNo = logiwaOrder.CarrierTrackingNumber.trim().length > 0 ? logiwaOrder.CarrierTrackingNumber : null;
             createOrderDto.orderItems = orderItems.reduce((acc: CreateOrderItemDto[], cur: CreateOrderItemDto): CreateOrderItemDto[] => {
               const item = acc.find((item) => item.listingSku === cur.listingSku);
@@ -280,6 +284,7 @@ export class OrdersService {
         this.logger.log(
           `Page Done ${searchDto.selectedPageIndex}/${Data[0].PageCount} with ${created} orders`
         );
+        loadedCnt += created;
       } catch {
         this.logger.log(`Failed to update orders on page {searchDto.selectedPageIndex}/${Data[0].PageCount}`);
       }
@@ -287,6 +292,10 @@ export class OrdersService {
       if (searchDto.selectedPageIndex === Data[0].PageCount) {
         break;
       }
+    }
+
+    if (loadedCnt > 0) {
+      return await this.findByLastModifiedDate(getDttmFromDate(startDate), getDttmFromDate(getCurrentDate()), true);
     }
   }
 

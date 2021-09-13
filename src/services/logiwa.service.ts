@@ -128,6 +128,10 @@ export class LogiwaService {
       'ID': logiwaInventoryItemSearchDto.id,
     };
 
+    if (logiwaInventoryItemSearchDto.lastModifiedDate) {
+      body['LastModifiedDate'] = toLogiwaDateFormat(toDateFromDateString(logiwaInventoryItemSearchDto.lastModifiedDate));
+    }
+
     if (logiwaInventoryItemSearchDto.lastModifiedDateStart) {
       body['LastModifiedDate_Start'] = toLogiwaDateFormat(toDateFromDateString(logiwaInventoryItemSearchDto.lastModifiedDateStart));
     }
@@ -169,7 +173,9 @@ export class LogiwaService {
       'PageSize': logiwaItemChannelListingSearchDto.pageSize ?? 200,
       'SelectedPageIndex': logiwaItemChannelListingSearchDto.selectedPageIndex ?? 1,
       'InventoryItemID': logiwaItemChannelListingSearchDto.inventoryItemId,
-      'ChannelID': logiwaItemChannelListingSearchDto.channelId
+      'ChannelID': logiwaItemChannelListingSearchDto.channelId,
+      'ChannelItemNumber': logiwaItemChannelListingSearchDto.channelItemNumber,
+      'SellerSKU': logiwaItemChannelListingSearchDto.sellerSKU,
     };
   
     return this.logiwaApiCall(`${this.logiwaApiConfig.apiBaseUrl}/InventoryItemItemChannelIDsSearch`, body);
@@ -273,6 +279,16 @@ export class LogiwaService {
     return this.inventoryItemIdMap[inventoryItemId]?.inventoryItemPackTypeId;
   }
 
+  async getLogiwaInventoryItemPackType(inventoryItemId: string, inventoryItemPackTypeId: string): Promise<any> {
+    const inventoryItemPackType = this.inventoryItemIdMap[inventoryItemId]?.inventoryItemPackType;
+    if (inventoryItemPackType?.Width) {
+      return inventoryItemPackType;
+    }
+
+    await this.updateInventoryItemPackType(inventoryItemId, inventoryItemPackTypeId);
+    return this.inventoryItemIdMap[inventoryItemId]?.inventoryItemPackType;
+  }
+
   async getAllAvailableToPromiseReportList(): Promise<any> {
     this.logger.log(`Loading available report from logiwa`);
 
@@ -357,15 +373,26 @@ export class LogiwaService {
     const { Data: [inventoryItem] } = logiwaItem ? { Data: [logiwaItem] } : await this.inventoryItemSearch({ id: Number(inventoryItemId) });
     if (inventoryItem) {
       const inventoryItemPackTypeId: number = await this.inventoryItemPackTypeSearch(inventoryItemId).then(({ Data: [inventoryItemPackType] }) => inventoryItemPackType.ID);
+      const inventoryItemPackType: any = await this.inventoryItemPackTypeGet(`${inventoryItemPackTypeId}`);
       this.inventoryItemIdMap[inventoryItemId] = {
         inventoryItemPackTypeId,
         code: inventoryItem.Code,
-      }
+        inventoryItemPackType
+      };
 
       const writeStream = createWriteStream(this.logiwaApiConfig.inventoryItemMapFilename);
       writeStream.write(JSON.stringify(this.inventoryItemIdMap));
       writeStream.end();
     }
+  }
+
+  private async updateInventoryItemPackType(inventoryItemId: string, inventoryItemPackTypeId: string): Promise<void> {
+    const inventoryItemPackType: any = await this.inventoryItemPackTypeGet(inventoryItemPackTypeId);
+    this.inventoryItemIdMap[inventoryItemId].inventoryItemPackType = inventoryItemPackType;
+
+    const writeStream = createWriteStream(this.logiwaApiConfig.inventoryItemMapFilename);
+    writeStream.write(JSON.stringify(this.inventoryItemIdMap));
+    writeStream.end();
   }
 }
 

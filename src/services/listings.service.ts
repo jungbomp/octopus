@@ -5,6 +5,7 @@ import { AmazonSPApiService } from './amazonSPApi.service';
 import { EbayApiService } from './ebayApi.service';
 import { InterchangeableGroupsService } from './interchangeableGroups.service';
 import { InventoriesService } from './inventories.service';
+import { OrdersService } from './orders.service';
 import { LogiwaService } from './logiwa.service';
 import { MarketsService } from './markets.service';
 import { WalmartApiService } from './walmartApi.service';
@@ -19,10 +20,12 @@ import { InterchangeableGroupMap } from '../models/interchangeableGroupMap.entit
 import { Inventory } from '../models/inventory.entity';
 import { Listing } from '../models/listing.entity';
 import { Market } from '../models/market.entity';
+import { Orders } from '../models/orders.entity';
 
 import { getCurrentDttm, getDttmFromDate } from '../utils/dateTime.util';
 import { findMarketId, findStoreType, toChannelTypeFromMarketId, toStoreTypeFromMarketId } from '../utils/types.util';
 import { ChannelType, StoreType } from '../types';
+import { OrderItem } from 'src/models/orderItem.entity';
 
 @Injectable()
 export class ListingsService {
@@ -35,6 +38,7 @@ export class ListingsService {
     private readonly ebayApiService: EbayApiService,
     private readonly interchangeableGroupsService: InterchangeableGroupsService,
     private readonly inventoiesService: InventoriesService,
+    private readonly ordersService: OrdersService,
     private readonly logiwaService: LogiwaService,
     private readonly marketsService: MarketsService,
     private readonly walmartApiService: WalmartApiService,
@@ -108,7 +112,7 @@ export class ListingsService {
     for (let i = 0; i < markets.length; i++) {
       const market: Market = markets[i];
 
-      if (channelId && market.channelId !== channelId) {
+      if (channelId && market.channelId !== Number(channelId)) {
         continue;
       }
 
@@ -123,11 +127,6 @@ export class ListingsService {
           const logiwaListing = logiwaListings[i];
 
           const stdSku: string = await this.logiwaService.getLogiwaInventoryItemCode(logiwaListing.InventoryItemID);
-          if (!stdSku) {
-            this.logger.log(`ChannelItemNumber - ${logiwaListing.ChannelItemNumber}, ChannelID - ${logiwaListing.ChannelID}`);
-            this.logger.log(`Can't find stdSku with inventoryId ${logiwaListing.InventoryItemID}`)
-          }
-
           const channel: ChannelType = toChannelTypeFromMarketId(market.marketId);
           const store: StoreType = findStoreType(logiwaListing.StoreName);
 
@@ -162,49 +161,31 @@ export class ListingsService {
 
         logiwaItemChannelListingSearchDto.selectedPageIndex = logiwaItemChannelListingSearchDto.selectedPageIndex + 1;
       }
-
-      this.logger.log('Completed to load logiwa channel Items');
     }
+
+    this.logger.log('Completed to load logiwa channel Items');
   }
 
-  async updateQuantityToChannel(dateStart: Date, dateEnd: Date): Promise<void> {
-    this.logger.log('Update quantity to each channel between');
+  async updateQuantityToChannelByOrderDate(dateStart: Date, dateEnd: Date): Promise<void> {
+    this.logger.log('Update tracking info to each channel between');
     this.logger.log(`${dateStart} and ${dateEnd}`);
 
-    const logiwaOrderSearchDto = new LogiwaOrderSearchDto(1);
-    logiwaOrderSearchDto.lastModifiedDateStart = getDttmFromDate(dateStart);
-    logiwaOrderSearchDto.lastModifiedDateEnd = getDttmFromDate(dateEnd);
-    logiwaOrderSearchDto.selectedPageIndex = logiwaOrderSearchDto.selectedPageIndex ?? 1;
+    const orders: Orders[] = await this.ordersService.findByLastModifiedDate(getDttmFromDate(dateStart), getDttmFromDate(dateEnd));
 
-    const updatedStdSku = new Set<string>();
+    return this.updateQuantityToChannelForOrdered(orders);
+  }
 
-    while (true) {
-      const { Data } = await this.logiwaService.warehouseOrderSearch(logiwaOrderSearchDto);
-      const logiwaOrders = Data.filter((logiwaOrder: any) => (logiwaOrder.ChannelOrderCode || '').length > 0);
-      for (let i = 0; i < logiwaOrders.length; i++) {
-        const { DetailInfo } = logiwaOrders[i];
-        for (let j = 0; j < DetailInfo.length; j++) {
-          const detail = DetailInfo[j];
+  async updateQuantityToChannelForOrdered(orders: Orders[]): Promise<void> {
+    this.logger.log('Update quantity to each channel for order items');
 
-          const stdSku: string = await this.logiwaService.getLogiwaInventoryItemCode(detail.InventoryItemID);
-          
-          if ((stdSku || '').length === 0 || updatedStdSku.has(stdSku)) {
-            continue;
-          }
+    this.logger.log('Retrieve orders for target stdSku list');
+    const inventories: Inventory[] = orders.map(
+      (order: Orders): Inventory[] => order.orderItems.map((orderItem: OrderItem): Inventory => orderItem.inventory)
+    ).flat(1);
 
-          updatedStdSku.add(stdSku);
-        }
-      }
-
-      if (logiwaOrderSearchDto.selectedPageIndex === Data[0].PageCount) {
-        break;
-      }
-
-      logiwaOrderSearchDto.selectedPageIndex = logiwaOrderSearchDto.selectedPageIndex + 1;
-    }
-
-    this.logger.log('Retrieve inventories for target stdSku list');
-    const inventories: Inventory[] = await Promise.all([...updatedStdSku].map(async (availableReport: any): Promise<Inventory> => await this.inventoiesService.findOne(availableReport.Code)));
+    const distinctInventories: Inventory[] = inventories.filter(
+      (inventory: Inventory, i: number) => inventories.findIndex((inven: Inventory) => inventory.stdSku === inven.stdSku) === i
+    );
 
     this.logger.log('Retrieve all interchangeable groups for ');
     const interchangeableGroupMaps: InterchangeableGroupMap[] = await this.interchangeableGroupsService.findAllMappings();
@@ -214,12 +195,12 @@ export class ListingsService {
         new Map<string, InterchangeableGroup>()
     );
     
-    const skuQuantityMap: Map<string, number> = inventories.reduce(
+    const skuQuantityMap: Map<string, number> = distinctInventories.reduce(
       (map: Map<string, number>, inventory: Inventory): Map<string, number> =>
         map.set(inventory.stdSku, Math.max(inventory.productQty, interchangeableQtyMap.get(inventory.stdSku)?.quantity ?? 0)),
       new Map<string, number>());
       
-    this.logger.log(`Loaded ${updatedStdSku.size} ordered stdSku from logiwa`);
+    this.logger.log(`Loaded ${skuQuantityMap.size} ordered stdSku from logiwa`);
 
     await this.updateStdSkuQuantityToEachChannel(skuQuantityMap);
 
@@ -240,12 +221,14 @@ export class ListingsService {
     const availableReportList = await this.logiwaService.getAllAvailableToPromiseReportList();
 
     this.logger.log('Retrieve inventories for availableReports');
-    const inventories: Inventory[] = await Promise.all(availableReportList.map((availableReport: any): Promise<Inventory> => this.inventoiesService.findOne(availableReport.Code)));
+    const inventories: Inventory[] = await Promise.all(availableReportList.map(
+      (availableReport: any): Promise<Inventory> => this.inventoiesService.findOne(availableReport.Code)));
     
-    const availableStockInfoMap: Map<string, number> = inventories.filter((inventory: Inventory) => inventory !== undefined).reduce((acc: Map<string, number>, inventory: Inventory, i: number): Map<string, number> =>
-      acc.set(inventory.stdSku,
-        Math.max(inventory.productQty, interchangeableQtyMap.get(inventory.stdSku)?.quantity ?? 0)),
-      new Map<string, number>());
+    const availableStockInfoMap: Map<string, number> = inventories.filter(
+      (inventory: Inventory) => inventory !== undefined).reduce(
+        (acc: Map<string, number>, inventory: Inventory, i: number): Map<string, number> =>
+          acc.set(inventory.stdSku, Math.max(inventory.productQty, interchangeableQtyMap.get(inventory.stdSku)?.quantity ?? 0)),
+          new Map<string, number>());
 
     await this.updateStdSkuQuantityToEachChannel(availableStockInfoMap);
 
