@@ -25,6 +25,7 @@ import { WalmartApiModule } from './modules/walmartApi.module';
 import { EbayApiModule } from './modules/ebayApi.module';
 import { AmazonSPApiModule } from './modules/amazonSPApi.module';
 import { InterchangeableGroupsModule } from './modules/interchangeableGroups.module';
+import { AWSModule } from './modules/aws.module';
 
 @Module({
   imports: [
@@ -122,6 +123,10 @@ import { InterchangeableGroupsModule } from './modules/interchangeableGroups.mod
           path: '/',
           module: InterchangeableGroupsModule,
         },
+        {
+          path: '/',
+          module: AWSModule,
+        }
       ],
     }]),
     MarketsModule,
@@ -144,6 +149,7 @@ import { InterchangeableGroupsModule } from './modules/interchangeableGroups.mod
     EbayApiModule,
     AmazonSPApiModule,
     InterchangeableGroupsModule,
+    AWSModule,
   ],
 })
 export class AppModule {}

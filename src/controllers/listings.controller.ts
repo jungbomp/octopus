@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ListingsService } from 'src/services/listings.service';
 import { Listing } from 'src/models/listing.entity';
 import { CreateListingDto } from 'src/models/dto/createListing.dto';
@@ -39,11 +39,11 @@ export class ListingsController {
     return this.listingsService.loadListingDataFromLogiwa(logiwaItemChannelListingSearchDto);
   }
 
-  @Post('update-listing-quantity')
-  updateQuantityToChannel(@Query('startDate') startDate: string, @Query('endDate') endDate: string): Promise<void> {
+  @Put('update-listing-quantity-by-order-date')
+  updateQuantityToChannelForOrdered(@Query('startDate') startDate: string, @Query('endDate') endDate: string): Promise<void> {
     const from = toDateFromDateString(startDate);
     const to = toDateFromDateString(endDate);
-    return this.listingsService.updateQuantityToChannel(from, to);
+    return this.listingsService.updateQuantityToChannelByOrderDate(from, to);
   }
 
   @Post('update-all-available-listing-quantity')

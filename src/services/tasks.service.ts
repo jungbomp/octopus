@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, Interval, Timeout } from '@nestjs/schedule';
+
 import { ClockInService } from './clockIn.service';
 import { InventoriesService } from './inventories.service';
 import { OrdersService } from './orders.service';
 import { ListingsService } from './listings.service';
 import { InterchangeableGroupsService } from './interchangeableGroups.service';
+
 import { LogiwaInventoryitemSearchDto } from '../models/dto/logiwaInventoryItemSearch.dto';
 import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto'
+import { Orders } from '../models/orders.entity';
+
 import { getCurrentDate, getDttmFromDate, subtractDate } from '../utils/dateTime.util';
 
 @Injectable()
@@ -27,45 +31,33 @@ export class TasksService {
     // this.clockInService.createNewClockInGoogleSheetIfNewDate();
   }
 
-  @Cron('0 50 1-23/3 * * *')
-  loadOrderDataFromLogiwa(): void {
-    this.logger.log(`triggered loadDataFromLogiwa`);
-    const currentDate = getCurrentDate();
-    const threeHoursBefore = subtractDate(currentDate, 0, 3, 10, 0);
-    const oneDayBefore = subtractDate(currentDate, 1, 0, 0, 0);
-
-    const logiwaOrderSearchDto = new LogiwaOrderSearchDto(0);
-    logiwaOrderSearchDto.lastModifiedDateStart = getDttmFromDate(threeHoursBefore);
-    logiwaOrderSearchDto.lastModifiedDateEnd = getDttmFromDate(currentDate);
-    // this.ordersService.loadOrderDataFromLogiwa(logiwaOrderSearchDto)
-    //   .then(() => this.ordersService.updateTrackingToChannel(oneDayBefore, getCurrentDate()));
-  }
-
-  @Cron('0 0 19 * * *')
+  @Cron('0 15 0 * * *')
   loadInventoryFromLogiwa(): void {
     this.logger.log(`triggered loadInventoryFromLogiwa`);
-
-    const yesterDay: Date = subtractDate(getCurrentDate(), 1, 0, 0, 0);
-    const logiwaInventoryitemSearchDto: LogiwaInventoryitemSearchDto = {
-      lastModifiedDateStart: getDttmFromDate(yesterDay) // yyyymmddhh24miss
-    };
     // this.inventoriesService.loadInventoryDataFromLogiwa(logiwaInventoryitemSearchDto)
-    //   .then(() => this.listingsService.loadListingDataFromLogiwa({})
-    //     .then(() => this.interchangeableGroupsService.updateInterchangeableQuantities()));
+    //   .then(() => this.listingsService.loadListingDataFromLogiwa({}))
+    //   .then(() => this.interchangeableGroupsService.updateInterchangeableQuantities())
+    //   .then(() => this.listingsService.updateAllAvailableQuantityToChannel());
   }
 
-  @Cron('0 0,30 * * * *')
+  @Cron('0 0 3-23 * * *')
   updateListingQuantity(): void {
     this.logger.log(`triggered updateListingQuantity`);
     const currentDate = getCurrentDate();
-    const yesterDay: Date = subtractDate(currentDate, 1, 0, 0, 0);
-    const logiwaInventoryitemSearchDto: LogiwaInventoryitemSearchDto = {
-      lastModifiedDateStart: getDttmFromDate(yesterDay) // yyyymmddhh24miss
-    };
+    const fourHoursBefore = subtractDate(currentDate, 0, 4, 0, 0);
+    const oneDayBefore = subtractDate(currentDate, 1, 0, 0, 0);
 
-    const thirtyMinutesBefore = subtractDate(currentDate, 0, 0, 31, 0);
-    // this.inventoriesService.loadInventoryDataFromLogiwa(logiwaInventoryitemSearchDto)
-    //   .then(() => this.listingsService.updateQuantityToChannel(thirtyMinutesBefore, currentDate));
+    const logiwaOrderSearchDto = new LogiwaOrderSearchDto(0);
+    logiwaOrderSearchDto.lastModifiedDateStart = getDttmFromDate(fourHoursBefore);
+    logiwaOrderSearchDto.lastModifiedDateEnd = getDttmFromDate(currentDate);
+
+    // this.ordersService.loadOrderDataFromLogiwa(logiwaOrderSearchDto)
+    //   .then((orders: Orders[]) => {
+    //     this.ordersService.updateTrackingToChannel(oneDayBefore, getCurrentDate());
+    //     return this.inventoriesService.loadInventoryDataFromLogiwaByOrderedItem(orders)
+    //       .then(() => this.interchangeableGroupsService.updateInterchangeableQuantities())
+    //       .then(() => this.listingsService.updateQuantityToChannelForOrdered(orders));
+    //   });
   }
 
   @Cron('0 0,30 * * * *')

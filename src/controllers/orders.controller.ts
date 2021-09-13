@@ -19,6 +19,11 @@ export class OrdersController {
     return this.ordersService.findUnProcessed(orderDateStart, orderDateEnd, includeOrderItems?.toLowerCase() === 'true');
   }
 
+  @Get('last-modified-date')
+  findByLastModifiedDate(@Query('orderDateStart') orderDateStart: string, @Query('orderDateEnd') orderDateEnd: string, @Query('includeOrderItems') includeOrderItems: string): Promise<Orders[]> {
+    return this.ordersService.findByLastModifiedDate(orderDateStart, orderDateEnd, includeOrderItems?.toLowerCase() === 'true');
+  }
+
   @Get(':ChannelOrderCode/:marketId')
   findOne(@Param('ChannelOrderCode') ChannelOrderCode: string, @Param('marketId') marketId: string, @Query('includeOrderItems') includeOrderItems: string): Promise<Orders> {
     return this.ordersService.findOne(ChannelOrderCode, Number(marketId), includeOrderItems?.toLowerCase() === 'true');
