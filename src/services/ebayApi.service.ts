@@ -94,6 +94,7 @@ export class EbayApiService {
         processed++;
       } catch (error) {
         this.logger.error(`Catched bulkUpdatePriceQuantity - ${dto.sku}`);
+        this.logger.error(error);
       }
     }
 

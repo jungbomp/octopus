@@ -35,8 +35,8 @@ export class InterchangeableGroupsController {
   }
 
   @Get('mappings/:stdSku')
-  findMappingsByStdSku(@Param('stdSku') stdSku: string): Promise<InterchangeableGroupMap[]> {
-    return this.interchangeableGroupsService.findMappingsByStdSku(stdSku);
+  findMappingsByStdSku(@Param('stdSku') stdSku: string): Promise<InterchangeableGroupMap> {
+    return this.interchangeableGroupsService.findMappingByStdSku(stdSku);
   }
 
   @Post()
