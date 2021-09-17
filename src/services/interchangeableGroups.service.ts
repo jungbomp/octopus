@@ -61,8 +61,8 @@ export class InterchangeableGroupsService {
     });
   }
 
-  async findMappingsByStdSku(stdSku: string): Promise<InterchangeableGroupMap[]> {
-    return this.interchangeableGroupMapsRepository.find({
+  async findMappingByStdSku(stdSku: string): Promise<InterchangeableGroupMap | undefined> {
+    const interchangeableGroupMaps: InterchangeableGroupMap[] = await this.interchangeableGroupMapsRepository.find({
       relations: ['interchangeableGroup'],
       where: {
         inventory: {
@@ -70,6 +70,9 @@ export class InterchangeableGroupsService {
         },
       }
     });
+
+
+    return interchangeableGroupMaps.shift();
   }
 
   async create(createInterchangeableGroupDto: CreateInterchangeableGroupDto): Promise<InterchangeableGroup> {

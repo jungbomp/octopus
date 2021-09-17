@@ -119,7 +119,7 @@ export class InventoriesService {
         createInventoryDto.productWidth = inventoryItemPackType?.Width;
         createInventoryDto.productHeight = inventoryItemPackType?.Height;
         createInventoryDto.sizeCode = stdSizeMap.get(logiwaItem.Size)?.sizeCode;
-        createInventoryDto.productCode = productMap.get(logiwaItem.Code.substring(0, logiwaItem.Code.indexOf('-')))?.productCode;
+        createInventoryDto.productCode = productMap.get(logiwaItem.Code.substring(0, logiwaItem.Code.indexOf('-').toUpperCase()))?.productCode;
 
         createInventories.push(createInventoryDto);
       }

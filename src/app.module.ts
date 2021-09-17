@@ -12,6 +12,7 @@ import { BrandsModule } from './modules/brands.module';
 import { VendorsModule } from './modules/vendors.module';
 import { VendorMapsModule } from './modules/vendorMaps.module';
 import { ProductsModule } from './modules/products.module';
+import { ProductBundlesModule } from './modules/productBundles.module';
 import { StdSizesModule } from './modules/stdSizes.module';
 import { InventoriesModule } from './modules/inventories.module';
 import { ProductMapsModule } from './modules/productMaps.module';
@@ -126,6 +127,10 @@ import { AWSModule } from './modules/aws.module';
         {
           path: '/',
           module: AWSModule,
+        },
+        {
+          path: '/',
+          module: ProductBundlesModule,
         }
       ],
     }]),
@@ -136,6 +141,7 @@ import { AWSModule } from './modules/aws.module';
     VendorsModule,
     VendorMapsModule,
     ProductsModule,
+    ProductBundlesModule,
     StdSizesModule,
     InventoriesModule,
     ProductMapsModule,
