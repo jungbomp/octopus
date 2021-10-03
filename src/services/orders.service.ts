@@ -8,7 +8,7 @@ import {
   UpdateResult,
 } from 'typeorm';
 
-import { AmazonSPFulfillmentCarrierCode, ChannelType, StoreType } from 'src/types';
+import { AmazonSPFulfillmentCarrierCode, ChannelType, MarketType, StoreType } from 'src/types';
 import { findChannelTypeFromChannelId, findMarketId, findStoreType, toChannelTypeFromMarketId, toStoreTypeFromMarketId } from 'src/utils/types.util';
 import { DateTimeUtil, getCurrentDate, getDttmFromDate } from 'src/utils/dateTime.util';
 
@@ -25,6 +25,7 @@ import { CreateOrderDto } from '../models/dto/createOrder.dto';
 import { CreateOrderItemDto } from '../models/dto/createOrderItem.dto';
 import { EbayApiCreateShippingFulfillmentDto } from '../models/dto/ebayApiCreateShippingFulfillment.dto';
 import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto';
+import { SalesBySkuDto } from '../models/dto/salesBySku.dto';
 import { Market } from '../models/market.entity';
 import { OrderItem } from '../models/orderItem.entity';
 import { Orders } from '../models/orders.entity';
@@ -222,6 +223,62 @@ export class OrdersService {
     return orders.length;
   }
 
+  async getSalesBySku(startDate: string, endDate: string): Promise<SalesBySkuDto[]> {
+    const orders: Orders[] = await this.findAll(true, undefined, startDate, endDate);
+
+    const map = new Map<string, SalesBySkuDto>();
+
+    orders.forEach((order: Orders) => {
+      order.orderItems.forEach((orderItem: OrderItem) => {
+        const key = `${order.orderDate}-${orderItem.inventory?.stdSku}`;
+
+        const salesBySku: SalesBySkuDto =
+          map.get(key) ??
+          this.buildSalesBySkuDto({
+            orderDate: order.orderDate,
+            productCode: orderItem.inventory?.product?.productCode,
+            stdSku: orderItem.inventory?.stdSku,
+            listingSku: orderItem.listingSku,
+            productName: orderItem.inventory?.productName,
+          });
+
+        switch (order.market.marketId) {
+          case MarketType.HAB_AMAZON:
+            salesBySku.hbAmazonQuantity += orderItem.unitQuantity;
+            break;
+          case MarketType.HAB_EBAY:
+            salesBySku.hbEbayQuantity += orderItem.unitQuantity;
+            break;
+          case MarketType.HAB_SEARS:
+            salesBySku.hbSearsQuantity += orderItem.unitQuantity;
+            break;
+          case MarketType.HAB_WALMART:
+            salesBySku.hbWalmartQuantity += orderItem.unitQuantity;
+            break;
+          case MarketType.HAB_SHOPIFY:
+            salesBySku.hbShopifyQuantity += orderItem.unitQuantity;
+            break;
+          case MarketType.MA_AMAZON:
+            salesBySku.mxAmazonQuantity += orderItem.unitQuantity;
+            break;
+          case MarketType.MA_EBAY:
+            salesBySku.mxEbayQuantity += orderItem.unitQuantity;
+            break;
+          case MarketType.MA_WALMART:
+            salesBySku.mxWalmartQuantity += orderItem.unitQuantity;
+            break;
+          default:
+            break;
+        }
+
+        salesBySku.totalQuantity += orderItem.unitQuantity;
+        map.set(key, salesBySku);
+      });
+    });
+
+    return [...map.values()];
+  }
+
   async loadFromLogiwa(searchDto: LogiwaOrderSearchDto): Promise<any> {
     this.loadOrderDataFromLogiwa(searchDto);
 
@@ -415,4 +472,21 @@ export class OrdersService {
 
     await this.updateOrdersProcDttm(channelOrderCode, findMarketId(ChannelType.EBAY, store), getCurrentDate());
   }
+
+  private buildSalesBySkuDto = (props: Partial<SalesBySkuDto>): SalesBySkuDto => ({
+    orderDate: props.orderDate || '',
+    productCode: props.productCode || '',
+    stdSku: props.stdSku || '',
+    listingSku: props.listingSku || '',
+    productName: props.productName || '',
+    totalQuantity: props.totalQuantity || 0,
+    hbAmazonQuantity: props.hbAmazonQuantity || 0,
+    hbEbayQuantity: props.hbEbayQuantity || 0,
+    hbSearsQuantity: props.hbSearsQuantity || 0,
+    hbWalmartQuantity: props.hbWalmartQuantity || 0,
+    hbShopifyQuantity: props.hbShopifyQuantity || 0,
+    mxAmazonQuantity: props.mxAmazonQuantity || 0,
+    mxEbayQuantity: props.mxEbayQuantity || 0,
+    mxWalmartQuantity: props.mxWalmartQuantity || 0,
+  })
 }

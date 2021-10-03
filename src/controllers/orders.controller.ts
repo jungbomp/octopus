@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto';
 import { CreateOrderDto } from '../models/dto/createOrder.dto';
+import { SalesBySkuDto } from '../models/dto/salesBySku.dto';
 import { Orders } from '../models/orders.entity';
 import { OrdersService } from '../services/orders.service';
 import { toDateFromDateString } from 'src/utils/dateTime.util';
@@ -22,6 +23,11 @@ export class OrdersController {
   @Get('last-modified-date')
   findByLastModifiedDate(@Query('orderDateStart') orderDateStart: string, @Query('orderDateEnd') orderDateEnd: string, @Query('includeOrderItems') includeOrderItems: string): Promise<Orders[]> {
     return this.ordersService.findByLastModifiedDate(orderDateStart, orderDateEnd, includeOrderItems?.toLowerCase() === 'true');
+  }
+
+  @Get('sales-by-sku')
+  salesBySku(@Query('orderDateStart') orderDateStart: string, @Query('orderDateEnd') orderDateEnd: string): Promise<SalesBySkuDto[]> {
+    return this.ordersService.getSalesBySku(orderDateStart, orderDateEnd);
   }
 
   @Get(':ChannelOrderCode/:marketId')
