@@ -265,7 +265,7 @@ export class AmazonSPApiService {
     const orderFulfillmentFeed: string = this.createPostOrderFulfillmentFeedMessage(store, orderFulfillmentRequests);
 
     const { payload: { feedDocumentId, encryptionDetails, url }}: AmazonSPApiCreateFeedDocumentResponse = await this.createFeedDocument(store, AmazonSPFeedDocumentContentTypes.XML);;
-    const uploadResponse: string = await this.uploadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, orderFulfillmentFeed, this.getContentType(AmazonSPFeedDocumentContentTypes.XML));
+    const uploadResponse: string = await this.uploadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, orderFulfillmentFeed, AmazonSPFeedDocumentContentTypes.XML);
     if (uploadResponse.length > 0) {
       return uploadResponse;
     }
@@ -310,7 +310,7 @@ export class AmazonSPApiService {
     };
   }
 
-  private async uploadFeedDocument(key: string, iv: string, url: string, feedDocument: string, contentType: string): Promise<any> {
+  private async uploadFeedDocument(key: string, iv: string, url: string, feedDocument: string, contentType: AmazonSPFeedDocumentContentTypes): Promise<any> {
     const cipher: Cipher = createCipheriv('aes-256-cbc', Buffer.from(key, 'base64'), Buffer.from(iv, 'base64'));
     const content = Buffer.from(feedDocument);
     const encryptedBuffer = Buffer.concat([cipher.update(content), cipher.final()]);
@@ -320,7 +320,7 @@ export class AmazonSPApiService {
         method: 'PUT',
         url: url,
         headers: {
-          'Content-Type': contentType
+          'Content-Type': this.getContentType(contentType),
         },
         data: encryptedBuffer,
         validateStatus: (status: number): boolean => status >= 200 && status < 501,
@@ -334,9 +334,31 @@ export class AmazonSPApiService {
     }
   }
 
+  private async uploadFeedDocumentWithoutEncript(url: string, feedDocument: string, contentType: AmazonSPFeedDocumentContentTypes): Promise<any> {
+    const content = Buffer.from(feedDocument);
+
+    try {
+      const response =  await axios({
+        method: 'PUT',
+        url: url,
+        headers: {
+          'Content-Type': this.getContentType(contentType),
+        },
+        data: feedDocument,
+        validateStatus: (status: number): boolean => status >= 200 && status < 501,
+      });
+
+      return response.data;
+    } catch (error) {
+      this.logger.log('Failed to upload feed document file into pre-signed url');
+      this.logger.log(error);
+      throw error;
+    }
+  }
+
   private getContentType(contentType: AmazonSPFeedDocumentContentTypes): string {
     const contentTypes = {
-      TSV: 'text/tab-separated-values; charset=iso-8859-1',
+      TSV: 'text/tab-separated-values; charset=utf-8',
       XML: 'text/xml; charset=utf-8',
       JSON: 'application/json'
     }

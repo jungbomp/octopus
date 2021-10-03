@@ -14,6 +14,11 @@ export class InventoriesController {
     return this.inventoriesService.findAll();
   }
 
+  @Get('product/:productCode')
+  findByProduct(@Param('productCode') productCode: string): Promise<Inventory[]> {
+    return this.inventoriesService.findByProduct(productCode);
+  }
+
   @Get(':stdSku')
   findOne(@Param('stdSku') stdSku: string): Promise<Inventory> {
     return this.inventoriesService.findOne(stdSku);
