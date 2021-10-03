@@ -61,6 +61,12 @@ export class InventoriesService {
     return this.inventorysRepository.findOne(stdSku);
   }
 
+  findByProduct(productCode: string): Promise<Inventory[]> {
+    return this.inventorysRepository.find({
+      product: { productCode }
+    });
+  }
+
   async remove(stdSku: string): Promise<void> {
     await this.inventorysRepository.delete(stdSku);
   }
@@ -88,7 +94,7 @@ export class InventoriesService {
       products.reduce((acc: Map<string, Product>, product: Product): Map<string, Product> => acc.set(product.productCode, product), new Map<string, Product>()));
 
     logiwaInventoryItemSearchDto.selectedPageIndex = (logiwaInventoryItemSearchDto.selectedPageIndex ?? 1);
-    
+
     while (true) {
       const { Data: logiwaItems } = await this.logiwaService.inventoryItemSearch(logiwaInventoryItemSearchDto);
       if (logiwaItems.length < 1) {
@@ -119,7 +125,7 @@ export class InventoriesService {
         createInventoryDto.productWidth = inventoryItemPackType?.Width;
         createInventoryDto.productHeight = inventoryItemPackType?.Height;
         createInventoryDto.sizeCode = stdSizeMap.get(logiwaItem.Size)?.sizeCode;
-        createInventoryDto.productCode = productMap.get(logiwaItem.Code.substring(0, logiwaItem.Code.indexOf('-').toUpperCase()))?.productCode;
+        createInventoryDto.productCode = productMap.get(logiwaItem.Code.substring(0, logiwaItem.Code.indexOf('-')).toUpperCase())?.productCode;
 
         createInventories.push(createInventoryDto);
       }
