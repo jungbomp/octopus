@@ -1,4 +1,4 @@
-import { ChannelType, StoreType } from "src/types";
+import { ChannelType, MarketType, StoreType } from 'src/types';
 
 const marketTable = [
   {
@@ -8,49 +8,49 @@ const marketTable = [
     store: null
   },
   {
-    id: 1,
+    id: MarketType.HAB_AMAZON,
     channelId: 1,
     channel: ChannelType.AMAZON,
     store: StoreType.HAB
   },
   {
-    id: 2,
+    id: MarketType.HAB_WALMART,
     channelId: 54,
     channel: ChannelType.WALMART,
     store: StoreType.HAB
   },
   {
-    id: 3,
+    id: MarketType.HAB_SHOPIFY,
     channelId: 3,
     channel: ChannelType.SHOPIFY,
     store: StoreType.HAB
   },
   {
-    id: 4,
+    id: MarketType.MA_AMAZON,
     channelId: 1,
     channel: ChannelType.AMAZON,
     store: StoreType.MA
   },
   {
-    id: 5,
+    id: MarketType.MA_EBAY,
     channelId: 2,
     channel: ChannelType.EBAY,
     store: StoreType.MA
   },
   {
-    id: 6,
+    id: MarketType.MA_WALMART,
     channelId: 54,
     channel: ChannelType.WALMART,
     store: StoreType.MA
   },
   {
-    id: 7,
+    id: MarketType.HAB_EBAY,
     channelId: 2,
     channel: ChannelType.EBAY,
     store: StoreType.HAB
   },
   {
-    id: 8,
+    id: MarketType.HAB_SEARS,
     channelId: 9,
     channel: ChannelType.SEARS,
     store: StoreType.HAB

@@ -1,3 +1,14 @@
+export enum MarketType {
+  HAB_AMAZON = 1,
+  HAB_WALMART = 2,
+  HAB_SHOPIFY = 3,
+  MA_AMAZON = 4,
+  MA_EBAY = 5,
+  MA_WALMART = 6,
+  HAB_EBAY = 7,
+  HAB_SEARS = 8,
+}
+
 export enum ChannelType {
   AMAZON = 'Amazon',
   WALMART = 'Walmart',
