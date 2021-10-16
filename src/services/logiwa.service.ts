@@ -12,6 +12,7 @@ import { ReceiptDto } from 'src/models/dto/receipt.dto';
 import { getCurrentDate, toDateFromDateString, toLogiwaDateFormat } from 'src/utils/dateTime.util';
 import { sleep } from 'src/utils/sleep.util';
 import { getChannelIds } from 'src/utils/types.util';
+import { LogiwaShipmentReportSearchDto } from 'src/models/dto/LogiwaShipmentReportSearch.dto';
 
 @Injectable()
 export class LogiwaService {
@@ -257,6 +258,22 @@ export class LogiwaService {
     }
 
     return this.logiwaApiCall(`${this.logiwaApiConfig.apiBaseUrl}/WarehouseOrderSearch`, body);
+  }
+
+  async shipmentReportAllSearch(searchDto: LogiwaShipmentReportSearchDto): Promise<any> {
+    const body = {
+      WarehouseID: 577,
+      PageSize: 200,
+      SelectedPageIndex: searchDto.selectedPageIndex,
+      OrderDate_Start: searchDto.orderDateStart ? toLogiwaDateFormat(toDateFromDateString(searchDto.orderDateStart)) : null,
+      OrderDate_End: searchDto.orderDateEnd ? toLogiwaDateFormat(toDateFromDateString(searchDto.orderDateEnd)) : null,
+      ChannelOrderCode: searchDto.channelOrderCode,
+      CarrierTrackingNumber: searchDto.carrierTrackingNumber,
+      ChannelID: searchDto.channelId ? [searchDto.channelId] : null,
+      WarehouseOrderID: searchDto.warehouseOrderID,
+      WarehouseOrderCode: searchDto.warehouseOrderCode,
+    }
+    return this.logiwaApiCall(`${this.logiwaApiConfig.apiBaseUrl}/ShipmentReportAllSearch`, body);
   }
 
   async getLogiwaInventoryItemCode(inventoryItemId: string): Promise<string> {

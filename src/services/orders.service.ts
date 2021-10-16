@@ -26,6 +26,7 @@ import { CreateOrderItemDto } from '../models/dto/createOrderItem.dto';
 import { EbayApiCreateShippingFulfillmentDto } from '../models/dto/ebayApiCreateShippingFulfillment.dto';
 import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto';
 import { SalesBySkuDto } from '../models/dto/salesBySku.dto';
+import { LogiwaShipmentReportSearchDto } from '../models/dto/LogiwaShipmentReportSearch.dto';
 import { Market } from '../models/market.entity';
 import { OrderItem } from '../models/orderItem.entity';
 import { Orders } from '../models/orders.entity';
@@ -293,9 +294,9 @@ export class OrdersService {
     while (true) {
       searchDto.selectedPageIndex = (searchDto.selectedPageIndex || 0) + 1;
 
-      const { Data } = await this.logiwaService.warehouseOrderSearch(searchDto);
+      const { Data: logiwaOrders } = await this.logiwaService.warehouseOrderSearch(searchDto);
       const createOrders: CreateOrderDto[] = await Promise.all(
-        Data.filter((logiwaOrder: any) => (logiwaOrder.ChannelOrderCode || '').length > 0)
+        logiwaOrders.filter((logiwaOrder: any) => (logiwaOrder.ChannelOrderCode || '').length > 0)
           .map(async (logiwaOrder: any): Promise<CreateOrderDto> => {
             const channel: ChannelType = findChannelTypeFromChannelId(logiwaOrder.ChannelID[0]);
             const store: StoreType = findStoreType(logiwaOrder.StoreName);
@@ -314,6 +315,8 @@ export class OrdersService {
                   return createOrderItemDto;
                 }));
 
+            const { Data: [logiwaShipmentReport] } = await this.logiwaService.shipmentReportAllSearch({ warehouseOrderID: logiwaOrder.ID });
+
             const createOrderDto = new CreateOrderDto();
             createOrderDto.channelOrderCode = logiwaOrder.ChannelOrderCode;
             createOrderDto.marketId = findMarketId(channel, store);
@@ -322,6 +325,7 @@ export class OrdersService {
             createOrderDto.orderPrice = logiwaOrder.TotalSalesGrossPrice;
             createOrderDto.orderShippingPrice = logiwaOrder.CarrierRate;
             createOrderDto.trackingNo = logiwaOrder.CarrierTrackingNumber.trim().length > 0 ? logiwaOrder.CarrierTrackingNumber : null;
+            createOrderDto.zipcode = logiwaShipmentReport?.Zipcode,
             createOrderDto.orderItems = orderItems.reduce((acc: CreateOrderItemDto[], cur: CreateOrderItemDto): CreateOrderItemDto[] => {
               const item = acc.find((item) => item.listingSku === cur.listingSku);
               if ((item || null) !== null) {
@@ -339,14 +343,14 @@ export class OrdersService {
       try {
         const created = await this.createBatch(createOrders);
         this.logger.log(
-          `Page Done ${searchDto.selectedPageIndex}/${Data[0].PageCount} with ${created} orders`
+          `Page Done ${searchDto.selectedPageIndex}/${logiwaOrders[0].PageCount} with ${created} orders`
         );
         loadedCnt += created;
       } catch {
-        this.logger.log(`Failed to update orders on page {searchDto.selectedPageIndex}/${Data[0].PageCount}`);
+        this.logger.log(`Failed to update orders on page {searchDto.selectedPageIndex}/${logiwaOrders[0].PageCount}`);
       }
       
-      if (searchDto.selectedPageIndex === Data[0].PageCount) {
+      if (searchDto.selectedPageIndex === logiwaOrders[0].PageCount) {
         break;
       }
     }
@@ -408,6 +412,64 @@ export class OrdersService {
     this.updateAmazonTrackingNo(StoreType.MA, amazonMaUpdateOrderFulfillmentRequests);
 
     this.logger.log(`Completed to update tracking number to each channel`);
+  }
+
+  async updateZipCode(searchDto: LogiwaShipmentReportSearchDto): Promise<any> {
+    this.updateZipcodeFromLogiwa(searchDto);
+
+    return { Success: true };
+  }
+
+  private async updateZipcodeFromLogiwa(searchDto: LogiwaShipmentReportSearchDto): Promise<any> {
+    this.logger.log('Update zipcode from logiwa');
+
+    while (true) {
+      searchDto.selectedPageIndex = (searchDto.selectedPageIndex || 0) + 1;
+
+      const { Data: logiwaShipmentReports } = await this.logiwaService.shipmentReportAllSearch(searchDto);
+      const createOrders: CreateOrderDto[] = await Promise.all(
+        logiwaShipmentReports.filter((shippingReport: any) => (shippingReport.ChannelOrderCode || '').length > 0 && (shippingReport.Zipcode || '').length > 0)
+          .map(async (shippingReport: any): Promise<CreateOrderDto> => {
+            const [order]: Orders[] = await this.find(shippingReport.ChannelOrderCode, undefined, true);
+
+            const createOrderDto = new CreateOrderDto();
+            createOrderDto.channelOrderCode = order.channelOrderCode;
+            createOrderDto.marketId = order.market.marketId;
+            createOrderDto.orderDate = order.orderDate;
+            createOrderDto.orderQty = order.orderQty;
+            createOrderDto.orderPrice = order.orderPrice;
+            createOrderDto.orderShippingPrice = order.orderShippingPrice;
+            createOrderDto.trackingNo = order.trackingNo;
+            createOrderDto.zipcode = shippingReport.Zipcode;
+            createOrderDto.orderItems = order.orderItems.map((orderItem: OrderItem) => {
+              const createOrderItemDto = new CreateOrderItemDto();
+              createOrderItemDto.channelOrderCode = order.channelOrderCode;
+              createOrderItemDto.marketId = order.market.marketId;
+              createOrderItemDto.listingSku = orderItem.listingSku;
+              createOrderItemDto.stdSku = orderItem.inventory.stdSku;
+              createOrderItemDto.unitPrice = orderItem.unitPrice;
+              createOrderItemDto.unitQuantity = orderItem.unitQuantity;
+
+              return createOrderItemDto;
+            });
+
+            return createOrderDto;
+          })
+      );
+
+      try {
+        const created = await this.createBatch(createOrders);
+        this.logger.log(
+          `Page Done ${searchDto.selectedPageIndex}/${logiwaShipmentReports[0].PageCount} with ${created} shipment reports`
+        );
+      } catch {
+        this.logger.log(`Failed to update zipcode on page {searchDto.selectedPageIndex}/${logiwaShipmentReports[0].PageCount}`);
+      }
+
+      if (searchDto.selectedPageIndex === logiwaShipmentReports[0].PageCount) {
+        break;
+      }
+    }
   }
 
   private async updateAmazonTrackingNo(store: StoreType, updateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]): Promise<void> {

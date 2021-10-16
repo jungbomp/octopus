@@ -5,7 +5,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const cors = {
-    origin: [/localhost\:8000/, /ec2-3-101-54-23\.us-west-1\.compute\.amazonaws\.com\:8000/]
+    origin: [/^(https?:\/\/localhost:8000)$/i, /https?:\/\/(([^/]+\.)?hatandbeyond\.cloud)$/i]
   }
 
   const app = await NestFactory.create(AppModule, { cors });

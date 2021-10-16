@@ -15,6 +15,7 @@ export class CreateOrderDto {
   trackingNo: string;
   employeeId: string;
   orderItems: CreateOrderItemDto[];
+  zipcode?: string;
   
   static toOrder(dto: CreateOrderDto, market: Market, user?: User): Orders {
     const order = new Orders();
@@ -27,6 +28,7 @@ export class CreateOrderDto {
     order.shippingPrice = dto.shippingPrice;
     order.shippingStatus = dto.shippingStatus;
     order.trackingNo = dto.trackingNo;
+    order.zipcode = dto.zipcode;
     order.user = user;
   
     return order;
