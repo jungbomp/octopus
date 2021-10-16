@@ -26,7 +26,7 @@ import { CreateOrderItemDto } from '../models/dto/createOrderItem.dto';
 import { EbayApiCreateShippingFulfillmentDto } from '../models/dto/ebayApiCreateShippingFulfillment.dto';
 import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto';
 import { SalesBySkuDto } from '../models/dto/salesBySku.dto';
-import { LogiwaShipmentReportSearchDto } from '../models/dto/LogiwaShipmentReportSearch.dto';
+import { LogiwaShipmentReportSearchDto } from '../models/dto/logiwaShipmentReportSearch.dto';
 import { Market } from '../models/market.entity';
 import { OrderItem } from '../models/orderItem.entity';
 import { Orders } from '../models/orders.entity';

@@ -2,10 +2,10 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto';
 import { CreateOrderDto } from '../models/dto/createOrder.dto';
 import { SalesBySkuDto } from '../models/dto/salesBySku.dto';
+import { LogiwaShipmentReportSearchDto } from '../models/dto/logiwaShipmentReportSearch.dto';
 import { Orders } from '../models/orders.entity';
 import { OrdersService } from '../services/orders.service';
 import { toDateFromDateString } from 'src/utils/dateTime.util';
-import { LogiwaShipmentReportSearchDto } from 'src/models/dto/LogiwaShipmentReportSearch.dto';
 
 @Controller('orders')
 export class OrdersController {
