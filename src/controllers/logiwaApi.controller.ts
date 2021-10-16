@@ -7,7 +7,7 @@ import { LogiwaInventoryitemSearchDto } from 'src/models/dto/logiwaInventoryItem
 import { LogiwaItemChannelListingSearchDto } from 'src/models/dto/logiwaItemChannelListingSearch.dto';
 import { LogiwaLocationBasedInventoryDto } from 'src/models/dto/logiwaLocationBasedInventory.dto';
 import { LogiwaOrderSearchDto } from 'src/models/dto/logiwaOrderSearch.dto';
-import { LogiwaShipmentReportSearchDto } from 'src/models/dto/LogiwaShipmentReportSearch.dto';
+import { LogiwaShipmentReportSearchDto } from 'src/models/dto/logiwaShipmentReportSearch.dto';
 import { getCurrentDttm } from 'src/utils/dateTime.util';
 
 @Controller('logiwa-api')
