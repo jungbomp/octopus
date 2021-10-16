@@ -5,6 +5,7 @@ import { SalesBySkuDto } from '../models/dto/salesBySku.dto';
 import { Orders } from '../models/orders.entity';
 import { OrdersService } from '../services/orders.service';
 import { toDateFromDateString } from 'src/utils/dateTime.util';
+import { LogiwaShipmentReportSearchDto } from 'src/models/dto/LogiwaShipmentReportSearch.dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -43,6 +44,11 @@ export class OrdersController {
   @Post('update-tracking-to-channel')
   updateTrackingToChannel(@Query('startDate') startDate: string, @Query('endDate') endDate: string): Promise<any> {
     return this.ordersService.updateTrackingToChannel(toDateFromDateString(startDate), toDateFromDateString(endDate));
+  }
+
+  @Post('update-zip-code')
+  updateZipCode(@Body() logiwaShipmentReportSearchDto: LogiwaShipmentReportSearchDto): Promise<any> {
+    return this.ordersService.updateZipCode(logiwaShipmentReportSearchDto);
   }
 
   @Post('load-logiwa')

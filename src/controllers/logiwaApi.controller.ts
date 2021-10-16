@@ -7,6 +7,7 @@ import { LogiwaInventoryitemSearchDto } from 'src/models/dto/logiwaInventoryItem
 import { LogiwaItemChannelListingSearchDto } from 'src/models/dto/logiwaItemChannelListingSearch.dto';
 import { LogiwaLocationBasedInventoryDto } from 'src/models/dto/logiwaLocationBasedInventory.dto';
 import { LogiwaOrderSearchDto } from 'src/models/dto/logiwaOrderSearch.dto';
+import { LogiwaShipmentReportSearchDto } from 'src/models/dto/LogiwaShipmentReportSearch.dto';
 import { getCurrentDttm } from 'src/utils/dateTime.util';
 
 @Controller('logiwa-api')
@@ -54,8 +55,14 @@ export class LogiwaApiController {
   }
 
   @Post('warehouse-order-search')
-  getInventory(@Body() LogiwaOrderSearchDto: LogiwaOrderSearchDto): Promise<any> {
+  logiwaWarehouseOrderSearch(@Body() LogiwaOrderSearchDto: LogiwaOrderSearchDto): Promise<any> {
     return this.logiwaService.warehouseOrderSearch(LogiwaOrderSearchDto);
+  }
+
+  @Post('shipment-report-all-search')
+  logiwaShipmentReportAllSearch(@Body() logiwaShipmentReportSearchDto: LogiwaShipmentReportSearchDto): Promise<any> {
+    console.log(logiwaShipmentReportSearchDto);
+    return this.logiwaService.shipmentReportAllSearch(logiwaShipmentReportSearchDto);
   }
 
   @Get('export-inventory-items')

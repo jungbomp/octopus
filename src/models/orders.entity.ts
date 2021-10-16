@@ -40,6 +40,9 @@ export class Orders {
   @Column({ type: 'varchar', length: 45, nullable: true })
   trackingNo: string;
 
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  zipcode: string;
+
   @ManyToOne(() => User, user => user.employeeId, {
     nullable: true,
     onUpdate: 'CASCADE',
