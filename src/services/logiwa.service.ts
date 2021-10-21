@@ -13,14 +13,16 @@ import { ReceiptDto } from 'src/models/dto/receipt.dto';
 import { getCurrentDate, toDateFromDateString, toLogiwaDateFormat } from 'src/utils/dateTime.util';
 import { sleep } from 'src/utils/sleep.util';
 import { getChannelIds } from 'src/utils/types.util';
+import { guid } from 'src/utils/guid.util';
 
 @Injectable()
 export class LogiwaService {
   private readonly logger = new Logger(LogiwaService.name);
-  private readonly apiCallTimePeriod = 1500;
 
   private tokenObj: { tokenType: string, accessToken: string, expires: Date };
-  private apiCallLogs: Date[];
+  private jobSlots: LogiwaJobItem[];
+  private jobQueue: string[];
+  private currentSlotIndex: number;
   private inventoryItemIdMap: any;
 
   private logiwaApiConfig: LogiwaApiConfig;
@@ -30,7 +32,11 @@ export class LogiwaService {
   ) {
     this.logiwaApiConfig = this.configService.get<LogiwaApiConfig>('logiwaApiConfig');
     this.tokenObj = null;
-    this.apiCallLogs = [];
+    this.logiwaApiConfig.numberOfApiCallPerSecond = Number(this.logiwaApiConfig.numberOfApiCallPerSecond);
+    this.logiwaApiConfig.jobRetryPeriod = Number(this.logiwaApiConfig.jobRetryPeriod);
+    this.jobSlots = Array<LogiwaJobItem>(this.logiwaApiConfig.numberOfApiCallPerSecond);
+    this.jobQueue = [];
+    this.currentSlotIndex = 0;
     this.inventoryItemIdMap = existsSync(this.logiwaApiConfig.inventoryItemMapFilename) ? JSON.parse(readFileSync(this.logiwaApiConfig.inventoryItemMapFilename, 'utf-8')) : {};
   }
 
@@ -42,16 +48,20 @@ export class LogiwaService {
   private async logiwaApiCall(url: string, data: any): Promise<any> {
     const { tokenType, accessToken } = await this.authorize();
 
-    this.flushCallLogs();
+    const jobId: string = guid();
+    let assignedSlotIndex = -1;
 
-    if (this.apiCallLogs.length === Number(this.logiwaApiConfig.numberOfApiCallPerSecond)) {
-      const delay: number = this.apiCallTimePeriod - (getCurrentDate().getTime() - this.apiCallLogs[0].getTime());
-      this.logger.log(`delay: ${delay}`);
-      await sleep(delay);
-      this.flushCallLogs();
+    if (this.currentSlotIndex < 0) {
+      this.enqueueJob(jobId);
+    } else {
+      assignedSlotIndex = this.currentSlotIndex;
+      this.currentSlotIndex = this.assignJobToSlot(jobId, assignedSlotIndex);
     }
 
-    this.apiCallLogs.push(getCurrentDate());
+    while (assignedSlotIndex < 0) {
+      await sleep(this.logiwaApiConfig.jobRetryPeriod);
+      assignedSlotIndex = this.findAssignedJobSlotIndex(jobId);
+    }
 
     const res = await axios({
       method: 'post',
@@ -63,6 +73,15 @@ export class LogiwaService {
       data: JSON.stringify(data),
       validateStatus: (status: number): boolean => status >= 200 && status < 501,
     });
+
+    setTimeout(() => {
+      this.clearSlot(assignedSlotIndex);
+      if (this.jobQueue.length > 0) {
+        this.currentSlotIndex = this.assignJobToSlot(this.dequeueJob(), assignedSlotIndex);
+      } else {
+        this.currentSlotIndex = this.findNextEmptyJobSlotIndex();
+      }
+    }, Math.max(0, 1000 - (getCurrentDate().getTime() - this.jobSlots[assignedSlotIndex].timeStamp.getTime())));
 
     if (res.status !== 200) {
       this.logger.error(res.data);
@@ -76,10 +95,34 @@ export class LogiwaService {
     return res.data;
   }
 
-  private flushCallLogs(): void {
-    while (this.apiCallLogs.length > 0 && getCurrentDate().getTime() - this.apiCallLogs[0].getTime() > this.apiCallTimePeriod) {
-      this.apiCallLogs.shift();
-    }
+  private enqueueJob(jobId: string): number {
+    this.jobQueue.push(jobId);
+    return this.jobQueue.length;
+  }
+
+  private dequeueJob(): string {
+    return this.jobQueue.shift();
+  }
+
+  private findNextEmptyJobSlotIndex(): number {
+    let index = 0;
+
+    for (; index < this.jobSlots.length && this.jobSlots[index] !== undefined; index++);
+    return (index < this.jobSlots.length) ? index : -1;
+  }
+
+  private assignJobToSlot(jobId: string, slotIndex: number): number {
+    this.jobSlots[slotIndex] = { jobId, timeStamp: getCurrentDate() };
+
+    return (slotIndex === this.currentSlotIndex) ? this.findNextEmptyJobSlotIndex() : this.currentSlotIndex;
+  }
+
+  private clearSlot(slotIndex: number): void {
+    this.jobSlots[slotIndex] = undefined;
+  }
+
+  private findAssignedJobSlotIndex(jobId: string): number {
+    return this.jobSlots.findIndex((jobItem: LogiwaJobItem) => jobItem.jobId === jobId);
   }
 
   /**
@@ -421,5 +464,11 @@ interface LogiwaApiConfig {
   depositorId: number,
   warehouseId: number,
   numberOfApiCallPerSecond: number,
+  jobRetryPeriod: number,
   inventoryItemMapFilename: string,
+}
+
+interface LogiwaJobItem {
+  jobId: string;
+  timeStamp: Date;
 }

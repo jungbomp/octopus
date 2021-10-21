@@ -61,7 +61,6 @@ export class LogiwaApiController {
 
   @Post('shipment-report-all-search')
   logiwaShipmentReportAllSearch(@Body() logiwaShipmentReportSearchDto: LogiwaShipmentReportSearchDto): Promise<any> {
-    console.log(logiwaShipmentReportSearchDto);
     return this.logiwaService.shipmentReportAllSearch(logiwaShipmentReportSearchDto);
   }
 
