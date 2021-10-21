@@ -315,8 +315,6 @@ export class OrdersService {
                   return createOrderItemDto;
                 }));
 
-            const { Data: [logiwaShipmentReport] } = await this.logiwaService.shipmentReportAllSearch({ warehouseOrderID: logiwaOrder.ID });
-
             const createOrderDto = new CreateOrderDto();
             createOrderDto.channelOrderCode = logiwaOrder.ChannelOrderCode;
             createOrderDto.marketId = findMarketId(channel, store);
@@ -325,7 +323,6 @@ export class OrdersService {
             createOrderDto.orderPrice = logiwaOrder.TotalSalesGrossPrice;
             createOrderDto.orderShippingPrice = logiwaOrder.CarrierRate;
             createOrderDto.trackingNo = logiwaOrder.CarrierTrackingNumber.trim().length > 0 ? logiwaOrder.CarrierTrackingNumber : null;
-            createOrderDto.zipcode = logiwaShipmentReport?.Zipcode,
             createOrderDto.orderItems = orderItems.reduce((acc: CreateOrderItemDto[], cur: CreateOrderItemDto): CreateOrderItemDto[] => {
               const item = acc.find((item) => item.listingSku === cur.listingSku);
               if ((item || null) !== null) {
