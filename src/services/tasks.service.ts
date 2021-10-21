@@ -60,7 +60,25 @@ export class TasksService {
     //     this.inventoriesService.loadInventoryDataFromLogiwaByOrderedItem(orders)
     //       .then(() => this.interchangeableGroupsService.updateInterchangeableQuantities())
     //       .then(() => this.productBundlesService.updateAllProductBundleQuantity())
-    //       .then(() => this.listingsService.updateQuantityToChannelForOrdered(orders));
+    //       .then(() => this.listingsService.updateQuantityToChannelForOrdered(orders))
+    //       .then(() => {
+    //         if (orders.length > 0) {
+    //           const [firstOrder] = orders;
+
+    //           const orderDateStart = orders.reduce(
+    //             (orderDate: string, order: Orders) =>
+    //               orderDate.localeCompare(order.orderDate) < 0 ? orderDate : order.orderDate,
+    //               firstOrder.orderDate
+    //           );
+
+    //           const orderDateEnd = orders.reduce(
+    //             (orderDate: string, order: Orders) =>
+    //               orderDate.localeCompare(order.orderDate) < 0 ? order.orderDate : orderDate,
+    //               firstOrder.orderDate
+    //           );
+    //           this.ordersService.updateZipCode({ orderDateStart: `${orderDateStart}000000`, orderDateEnd: `${orderDateEnd}235959` });
+    //         }
+    //       })
     //   });
   }
 

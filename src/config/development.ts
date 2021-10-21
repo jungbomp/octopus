@@ -35,6 +35,7 @@ export const config = {
     depositorId: process.env.LOGIWA_API_DEPOSITOR_ID,
     warehouseId: process.env.LOGIWA_API_WAREHOUSE_ID,
     numberOfApiCallPerSecond: process.env.LOGIWA_API_NUMBER_OF_API_CALL_PER_SECOND,
+    jobRetryPeriod: process.env.LOGIWA_API_JOB_RETRY_PERIOD,
     inventoryItemMapFilename: process.env.LOGIWA_API_INVENTORY_ITEM_MAP_FILENAME
   },
   walmartApiConfig: {
