@@ -35,7 +35,23 @@ Hat and beyond e-commerce backend
     ```
     > node ./dist/main.js
     or
-    > pm2 start ./dist/main.js  # if you use management system such as PM2
+    > pm2 start ecosystem.config.js --only octopus --env development  # if you use management system such as PM2
+    or
+    > pm2-runtime start ecosystem.config.js --only octopus --env development
+    ```
+  * Docker image build
+    ```
+    > docker build . -t octopus:latest
+    ```
+  * Docker container run
+    ```
+    > docker run --name octopus -d -p 3000:3000 octopus
+    or
+    > docker run -p 3000:3000 octopus
+    ```
+  * Attach to running docker container
+    ```
+    > docker attach octopus
     ```
     
 
