@@ -1,0 +1,7 @@
+node_modules
+.git
+.gitignore
+Dockerfile
+src
+README.md
+webpack-hmr.config.js
