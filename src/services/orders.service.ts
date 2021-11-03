@@ -312,6 +312,10 @@ export class OrdersService {
                   createOrderItemDto.unitPrice = detail.SalesUnitPrice;
                   createOrderItemDto.unitQuantity = detail.PackQuantity;
                   createOrderItemDto.stdSku = await this.logiwaService.getLogiwaInventoryItemCode(detail.InventoryItemID);
+                  createOrderItemDto.garmentCost = createOrderItemDto.stdSku ?
+                    await this.inventoriesService.findOne(createOrderItemDto.stdSku)
+                      .then((inventory: Inventory) => inventory?.garmentCost ?? 0)
+                    : 0;
                   return createOrderItemDto;
                 }));
 
@@ -438,17 +442,20 @@ export class OrdersService {
             createOrderDto.orderShippingPrice = order.orderShippingPrice;
             createOrderDto.trackingNo = order.trackingNo;
             createOrderDto.zipcode = shippingReport.Zipcode;
-            createOrderDto.orderItems = order.orderItems.map((orderItem: OrderItem) => {
-              const createOrderItemDto = new CreateOrderItemDto();
-              createOrderItemDto.channelOrderCode = order.channelOrderCode;
-              createOrderItemDto.marketId = order.market.marketId;
-              createOrderItemDto.listingSku = orderItem.listingSku;
-              createOrderItemDto.stdSku = orderItem.inventory.stdSku;
-              createOrderItemDto.unitPrice = orderItem.unitPrice;
-              createOrderItemDto.unitQuantity = orderItem.unitQuantity;
+            createOrderDto.orderItems = order.orderItems
+              .filter((orderItem: OrderItem) => orderItem.inventory?.stdSku !== undefined)
+              .map((orderItem: OrderItem) => {
+                const createOrderItemDto = new CreateOrderItemDto();
+                createOrderItemDto.channelOrderCode = order.channelOrderCode;
+                createOrderItemDto.marketId = order.market.marketId;
+                createOrderItemDto.listingSku = orderItem.listingSku;
+                createOrderItemDto.stdSku = orderItem.inventory.stdSku;
+                createOrderItemDto.unitPrice = orderItem.unitPrice;
+                createOrderItemDto.unitQuantity = orderItem.unitQuantity;
+                createOrderItemDto.garmentCost = orderItem.garmentCost;
 
-              return createOrderItemDto;
-            });
+                return createOrderItemDto;
+              });
 
             return createOrderDto;
           })

@@ -9,6 +9,7 @@ export class CreateOrderItemDto {
   stdSku: string;
   unitPrice: number;
   unitQuantity: number;
+  garmentCost: number;
 
   static toOrderItem(dto: CreateOrderItemDto, order: Orders, inventory: Inventory): OrderItem {
     const orderItem = new OrderItem();
@@ -17,6 +18,7 @@ export class CreateOrderItemDto {
     orderItem.inventory = inventory
     orderItem.unitPrice = dto.unitPrice;
     orderItem.unitQuantity = dto.unitQuantity;
+    orderItem.garmentCost = dto.garmentCost;
 
     return orderItem;
   }
