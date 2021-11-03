@@ -40,4 +40,7 @@ export class OrderItem {
 
   @Column({ type: 'char', length: 1, default: 'N' })
   tagChangeYn: string;
+
+  @Column({ type: 'float' })
+  garmentCost: number;
 }
