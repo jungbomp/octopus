@@ -22,7 +22,7 @@ export class ClockInService {
     private readonly dateTimeUtil: DateTimeUtil,
   ) {
     this.clockInConfig = this.configService.get<ClockInConfig>('clockIn');
-    // this.setCurrentGoogleSheetFileId();
+    //this.setCurrentGoogleSheetFileId();
   }
 
   async findAll(): Promise<ClockIn[]> {
@@ -68,11 +68,17 @@ export class ClockInService {
   }
 
   async createNewClockInGoogleSheetIfNewDate(): Promise<string> {
+    if (!this.googleSheetFileId) {
+      this.googleSheetFileId = await this.getLatestClockInGoogleSheetId()
+    }
+
     const fileId = this.googleSheetFileId;
     const filemeta = await this.googleApiService.getFileMetadata(fileId);
     const curDate = this.dateTimeUtil.getCurrentDate();
     const curYear = curDate.getFullYear();
-    const periods = filemeta.title.match(/([0-9]{2}|[0-9]{1})\/([0-9]{2}|[0-9]{1})/g).map((period: string): Date => new Date(`${curYear}/${period}`)).sort();
+    const periods = filemeta.title.match(/([0-9]{2}|[0-9]{1})\/([0-9]{2}|[0-9]{1})/g)
+      .map((period: string): Date => new Date(`${curYear}/${period}`))
+      .sort((lhs: Date, rhs: Date) => lhs.getTime() - rhs.getTime());
 
     if (periods[1] < curDate) {
       const periodFrom = new Date(periods[1].getTime() + (60 * 60 * 24 * 1000));

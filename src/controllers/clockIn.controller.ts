@@ -23,4 +23,9 @@ export class ClockInController {
   create(@Body() createClockInDto: CreateClockInDto): Promise<ClockIn> {
     return this.clockInService.create(createClockInDto);
   }
+
+  @Post('create-new-sheet')
+  createNewClockInSheet(): Promise<string> {
+    return this.clockInService.createNewClockInGoogleSheetIfNewDate();
+  }
 }

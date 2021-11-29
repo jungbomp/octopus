@@ -5,6 +5,7 @@ import { ClockInService } from './clockIn.service';
 import { InterchangeableGroupsService } from './interchangeableGroups.service';
 import { InventoriesService } from './inventories.service';
 import { ListingsService } from './listings.service';
+import { LogiwaService } from './logiwa.service';
 import { OrdersService } from './orders.service';
 import { ProductBundlesService } from './productBundles.service';
 
@@ -23,6 +24,7 @@ export class TasksService {
     private readonly interchangeableGroupsService: InterchangeableGroupsService,
     private readonly inventoriesService: InventoriesService,
     private readonly listingsService: ListingsService,
+    private readonly logiwaService: LogiwaService,
     private readonly ordersService: OrdersService,
     private readonly productBundlesService: ProductBundlesService,
   ) {}
@@ -41,6 +43,12 @@ export class TasksService {
     //   .then(() => this.interchangeableGroupsService.updateInterchangeableQuantities())
     //   .then(() => this.listingsService.updateAllAvailableQuantityToChannel())
     //   .then(() => this.productBundlesService.updateAllProductBundleQuantity());
+  }
+
+  @Cron('0 30 21 * * *')
+  loadInventoryItemPackTypeFromLogiwa(): void {
+    this.logger.log(`triggered loadInventoryItemPackTypeFromLogiwa`);
+    // this.logiwaService.loadInventoryItemPackType();
   }
 
   @Cron('0 0 2-23 * * *')

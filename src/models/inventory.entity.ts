@@ -34,6 +34,9 @@ export class Inventory {
   @Column({ type: 'int' })
   productQty: number;
 
+  @Column({ type: 'int' })
+  safetyStockQty: number;
+
   @Column({ type: 'float' })
   productPrice: number;
 
