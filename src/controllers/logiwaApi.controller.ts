@@ -29,6 +29,11 @@ export class LogiwaApiController {
     return this.logiwaService.inventoryItemPackTypeGet(id);
   }
 
+  @Get('load-inventory-item-pack-type')
+  loadInventoryItemPackType(): Promise<any> {
+    return this.logiwaService.loadInventoryItemPackType();
+  }
+
   @Post('location-based-inventory')
   locationBasedInventory(@Body() logiwaLocationBasedInventoryDto: LogiwaLocationBasedInventoryDto): Promise<any> {
     return this.logiwaService.locationBasedInventory(logiwaLocationBasedInventoryDto)

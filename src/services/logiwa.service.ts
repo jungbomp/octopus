@@ -89,7 +89,7 @@ export class LogiwaService {
     }
 
     if (res.data && !res.data.Success) {
-      throw new Error(res.data.SuccessMessage);
+      throw new Error(res.data.SuccessMessage ?? res.data.Errors[0]);
     }
 
     return res.data;
@@ -260,7 +260,7 @@ export class LogiwaService {
    * @returns 
    */
   async inventoryItemPackTypeGet(id: string): Promise<any> {
-    return this.logiwaApiCall(`${this.logiwaApiConfig.apiBaseUrl}/InventoryItemPackTypeGet`, { ID: id })
+    return this.logiwaApiCall(`${this.logiwaApiConfig.apiBaseUrl}/InventoryItemPackTypeGet`, { ID: id });
   }
 
   async warehouseReceiptBulkInsert(receipts: ReceiptDto[]): Promise<{ Success: string, SuccessMessage: string }> {
@@ -347,6 +347,27 @@ export class LogiwaService {
 
     await this.updateInventoryItemPackType(inventoryItemId, inventoryItemPackTypeId);
     return this.inventoryItemIdMap[inventoryItemId]?.inventoryItemPackType;
+  }
+
+  async loadInventoryItemPackType(): Promise<void> {
+    this.logger.log('Refresh all invenotyItemPackType');
+    const inventoryItemIds: string[] = Object.keys(this.inventoryItemIdMap);
+
+    for (let i  = 0; i < inventoryItemIds.length; i++) {
+      const inventoryItemPackTypeId = this.inventoryItemIdMap[inventoryItemIds[i]].inventoryItemPackTypeId;
+      if (inventoryItemPackTypeId) {
+        const inventoryItemPackType: any = await this.inventoryItemPackTypeGet(`${inventoryItemPackTypeId}`);
+        if (inventoryItemPackType) {
+          this.inventoryItemIdMap[inventoryItemIds[i]].inventoryItemPackType = inventoryItemPackType;
+        }
+      }
+    }
+
+    const writeStream = createWriteStream(this.logiwaApiConfig.inventoryItemMapFilename);
+    writeStream.write(JSON.stringify(this.inventoryItemIdMap));
+    writeStream.end();
+
+    this.logger.log(`Completed to refresh all inventoryItemPackType`);
   }
 
   async getAllAvailableToPromiseReportList(): Promise<any> {

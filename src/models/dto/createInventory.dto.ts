@@ -17,6 +17,7 @@ export class CreateInventoryDto {
   productLength: number;
   productWidth: number;
   productHeight: number;
+  safetyStockQty: number;
   productCode: string;
   sizeCode: string;
   validYn: string;
@@ -37,6 +38,7 @@ export class CreateInventoryDto {
     inventory.productLength = dto.productLength;
     inventory.productWidth = dto.productWidth;
     inventory.productHeight = dto.productHeight;
+    inventory.safetyStockQty = dto.safetyStockQty;
     inventory.sizeCode = dto.sizeCode;
     inventory.validYn = dto.validYn;
     inventory.product = product;
@@ -60,6 +62,7 @@ export class CreateInventoryDto {
     dto.productLength = inventory.productLength;
     dto.productWidth = inventory.productWidth;
     dto.productHeight = inventory.productHeight;
+    dto.safetyStockQty = inventory.safetyStockQty;
     dto.sizeCode = inventory.sizeCode;
     dto.validYn = inventory.validYn;
     dto.productCode = inventory.product?.productCode;

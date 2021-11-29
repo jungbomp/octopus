@@ -16,6 +16,7 @@ export class UpdateInventoryDto {
   productWidth: number;
   productHeight: number;
   productCode: string;
+  safetyStockQty: number;
   sizeCode: string;
   validYn: string;
 
@@ -33,6 +34,7 @@ export class UpdateInventoryDto {
     inventory.productLength = dto.productLength;
     inventory.productWidth = dto.productWidth;
     inventory.productHeight = dto.productHeight;
+    inventory.safetyStockQty = dto.safetyStockQty;
     inventory.sizeCode = dto.sizeCode;
     inventory.product = product;
     inventory.stdSize = stdSize;
