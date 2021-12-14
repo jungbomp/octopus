@@ -10,7 +10,7 @@ import { LogiwaLocationBasedInventoryDto } from 'src/models/dto/logiwaLocationBa
 import { LogiwaOrderSearchDto } from 'src/models/dto/logiwaOrderSearch.dto';
 import { LogiwaShipmentReportSearchDto } from 'src/models/dto/logiwaShipmentReportSearch.dto';
 import { ReceiptDto } from 'src/models/dto/receipt.dto';
-import { getCurrentDate, toDateFromDateString, toLogiwaDateFormat } from 'src/utils/dateTime.util';
+import { addDate, getCurrentDate, toDateFromDateString, toLogiwaDateFormat } from 'src/utils/dateTime.util';
 import { sleep } from 'src/utils/sleep.util';
 import { getChannelIds } from 'src/utils/types.util';
 import { guid } from 'src/utils/guid.util';
@@ -153,7 +153,7 @@ export class LogiwaService {
     this.tokenObj = {
       tokenType: res.data.token_type,
       accessToken: res.data.access_token,
-      expires: new Date(res.data['.expires'])
+      expires: addDate(getCurrentDate(), 0, 12, 0, 0), // set expires in next 12 hours instead of the new Date(res.data['.expires'])
     }
   
     return this.tokenObj;
@@ -380,7 +380,7 @@ export class LogiwaService {
       const { Data: availableToPromiseReport } = await this.availableToPromiseReportSearch(logiwaAvailableToPromiseReportSearchDto);
       list = [...list, ...availableToPromiseReport ];
 
-      if (logiwaAvailableToPromiseReportSearchDto.selectedPageIndex === availableToPromiseReport[0].PageCount) {
+      if ((availableToPromiseReport ?? []).length === 0 || logiwaAvailableToPromiseReportSearchDto.selectedPageIndex === availableToPromiseReport[0].PageCount) {
         this.logger.log('Complete to load available report');
         break;
       }
