@@ -83,7 +83,7 @@ export class InventoriesService {
     this.logger.log('load inventory data from logiwa');
     this.logger.log(logiwaInventoryItemSearchDto);
 
-    const availableStockInfoMap: Map<string, number> = await this.logiwaAllAvailableToPromiseReportList().then(availableReportList =>
+    const availableStockInfoMap: Map<string, number> = await this.logiwaService.getAllAvailableToPromiseReportList().then(availableReportList =>
       availableReportList.reduce((acc: Map<string, number>, availableReport: any): Map<string, number> => 
         acc.set(availableReport.Code, availableReport.StockQuantity - availableReport.OrderQuantity), new Map<string, number>()));
 
@@ -159,7 +159,7 @@ export class InventoriesService {
         ))
     ];
 
-    const availableStockInfoMap: Map<string, number> = await this.logiwaAllAvailableToPromiseReportList()
+    const availableStockInfoMap: Map<string, number> = await this.logiwaService.getAllAvailableToPromiseReportList()
       .then(availableReportList =>
         availableReportList.reduce(
           (acc: Map<string, number>, availableReport: any): Map<string, number> =>
@@ -216,27 +216,5 @@ export class InventoriesService {
         this.logger.log(error);
       }
     }
-  }
-
-  private async logiwaAllAvailableToPromiseReportList(): Promise<any> {
-    const logiwaAvailableToPromiseReportSearchDto: LogiwaAvailableToPromiseReportSearchDto = { selectedPageIndex: 1 }
-
-    let list = [];
-    while (true) {
-      const { Data: availableToPromiseReport } = await this.logiwaService.availableToPromiseReportSearch(logiwaAvailableToPromiseReportSearchDto);
-      list = [...list, ...availableToPromiseReport ];
-
-      this.logger.log(`Loading available report ${logiwaAvailableToPromiseReportSearchDto.selectedPageIndex}/${availableToPromiseReport[0].PageCount}`)
-
-      if (logiwaAvailableToPromiseReportSearchDto.selectedPageIndex === availableToPromiseReport[0].PageCount) {
-        this.logger.log('Complete to load available report');
-        break;
-      }
-
-
-      logiwaAvailableToPromiseReportSearchDto.selectedPageIndex = logiwaAvailableToPromiseReportSearchDto.selectedPageIndex + 1;
-    }
-
-    return list;
   }
 }

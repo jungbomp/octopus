@@ -161,6 +161,15 @@ export const getCurrentDttm = (): string => {
   return getDttmFromDate(getCurrentDate());
 }
 
+export const addDate = (srcDate: Date, days: number, hours: number, minutes: number, seconds: number): Date => {
+  const oneSecond = 1000;
+  const oneMinute = oneSecond * 60;
+  const oneHour = oneMinute * 60;
+  const oneDay = oneHour * 24;
+
+  return new Date(srcDate.getTime() + ((oneDay * days) + (oneHour * hours) + (oneMinute * minutes) + (oneSecond * seconds)));
+}
+
 export const subtractDate = (srcDate: Date, days: number, hours: number, minutes: number, seconds: number): Date => {
   const oneSecond = 1000;
   const oneMinute = oneSecond * 60;
