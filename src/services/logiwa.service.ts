@@ -378,9 +378,13 @@ export class LogiwaService {
     let list = [];
     while (true) {
       const { Data: availableToPromiseReport } = await this.availableToPromiseReportSearch(logiwaAvailableToPromiseReportSearchDto);
+      if ((availableToPromiseReport ?? []).length < 1 ) {
+        break;
+      }
+
       list = [...list, ...availableToPromiseReport ];
 
-      if ((availableToPromiseReport ?? []).length === 0 || logiwaAvailableToPromiseReportSearchDto.selectedPageIndex === availableToPromiseReport[0].PageCount) {
+      if (logiwaAvailableToPromiseReportSearchDto.selectedPageIndex === availableToPromiseReport[0].PageCount) {
         this.logger.log('Complete to load available report');
         break;
       }
@@ -398,7 +402,10 @@ export class LogiwaService {
     const logiwaInventoryItemSearchDto = { selectedPageIndex: 1 };
     while (true) {
       const { Data: logiwaItems } = await this.inventoryItemSearch(logiwaInventoryItemSearchDto);
-      
+      if ((logiwaItems ?? []).length < 1) {
+        break;
+      }
+
       logiwaItems.forEach((item: any) => bodies.push([item.Code.toUpperCase(), item.ID]));
 
       this.logger.log(
@@ -431,6 +438,10 @@ export class LogiwaService {
       
       while (true) {
         const { Data: logiwaListings } = await this.inventoryItemItemChannelIDsSearch(logiwaItemChannelListingSearchDto);
+        if ((logiwaListings ?? []).length < 1) {
+          break;
+        }
+
         logiwaListings.forEach((item: any) => bodies.push([item.ChannelID, item.ChannelDescription, item.StoreName, item.ID, item.InventoryItemID, item.ChannelItemNumber, item.SellerSKU]));
 
         this.logger.log(
