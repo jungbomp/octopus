@@ -122,6 +122,10 @@ export class ListingsService {
       while (true) {
         const { Data: logiwaListings } = await this.logiwaService.inventoryItemItemChannelIDsSearch(logiwaItemChannelListingSearchDto);
 
+        if ((logiwaListings ?? []).length < 1) {
+          break;
+        }
+
         const createListings: CreateListingDto[] = [];
         for (let i = 0; i < logiwaListings.length; i++) {
           const logiwaListing = logiwaListings[i];

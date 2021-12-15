@@ -97,7 +97,7 @@ export class InventoriesService {
 
     while (true) {
       const { Data: logiwaItems } = await this.logiwaService.inventoryItemSearch(logiwaInventoryItemSearchDto);
-      if (logiwaItems.length < 1) {
+      if ((logiwaItems ?? []).length < 1) {
         break;
       }
 

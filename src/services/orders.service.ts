@@ -295,6 +295,10 @@ export class OrdersService {
       searchDto.selectedPageIndex = (searchDto.selectedPageIndex || 0) + 1;
 
       const { Data: logiwaOrders } = await this.logiwaService.warehouseOrderSearch(searchDto);
+      if ((logiwaOrders ?? []).length < 1) {
+        break;
+      }
+
       const createOrders: CreateOrderDto[] = await Promise.all(
         logiwaOrders.filter((logiwaOrder: any) => (logiwaOrder.ChannelOrderCode || '').length > 0)
           .map(async (logiwaOrder: any): Promise<CreateOrderDto> => {
@@ -428,6 +432,10 @@ export class OrdersService {
       searchDto.selectedPageIndex = (searchDto.selectedPageIndex || 0) + 1;
 
       const { Data: logiwaShipmentReports } = await this.logiwaService.shipmentReportAllSearch(searchDto);
+      if ((logiwaShipmentReports ?? []).length < 1) {
+        break;
+      }
+
       const createOrders: CreateOrderDto[] = await Promise.all(
         logiwaShipmentReports.filter((shippingReport: any) => (shippingReport.ChannelOrderCode || '').length > 0 && (shippingReport.Zipcode || '').length > 0)
           .map(async (shippingReport: any): Promise<CreateOrderDto> => {
