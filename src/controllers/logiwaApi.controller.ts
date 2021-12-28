@@ -36,12 +36,14 @@ export class LogiwaApiController {
 
   @Post('location-based-inventory')
   locationBasedInventory(@Body() logiwaLocationBasedInventoryDto: LogiwaLocationBasedInventoryDto): Promise<any> {
-    return this.logiwaService.locationBasedInventory(logiwaLocationBasedInventoryDto)
+    return this.logiwaService.locationBasedInventory(logiwaLocationBasedInventoryDto);
   }
 
   @Post('available-to-promise-report-search')
-  availableToPromiseReportSearch(@Body() logiwaAvailableToPromiseReportSearchDto: LogiwaAvailableToPromiseReportSearchDto): Promise<any> {
-    return this.logiwaService.availableToPromiseReportSearch(logiwaAvailableToPromiseReportSearchDto)
+  availableToPromiseReportSearch(
+    @Body() logiwaAvailableToPromiseReportSearchDto: LogiwaAvailableToPromiseReportSearchDto,
+  ): Promise<any> {
+    return this.logiwaService.availableToPromiseReportSearch(logiwaAvailableToPromiseReportSearchDto);
   }
 
   @Post('all-available-to-promise-report-list')
@@ -50,7 +52,9 @@ export class LogiwaApiController {
   }
 
   @Post('inventory-item-item-channel-ids-search')
-  logiwaInventoryItemItemChannelIDsSearch(@Body() logiwaItemChannelListingSearchDto: LogiwaItemChannelListingSearchDto): Promise<any> {
+  logiwaInventoryItemItemChannelIDsSearch(
+    @Body() logiwaItemChannelListingSearchDto: LogiwaItemChannelListingSearchDto,
+  ): Promise<any> {
     return this.logiwaService.inventoryItemItemChannelIDsSearch(logiwaItemChannelListingSearchDto);
   }
 
@@ -60,13 +64,18 @@ export class LogiwaApiController {
   }
 
   @Post('warehouse-order-search')
-  logiwaWarehouseOrderSearch(@Body() LogiwaOrderSearchDto: LogiwaOrderSearchDto): Promise<any> {
-    return this.logiwaService.warehouseOrderSearch(LogiwaOrderSearchDto);
+  logiwaWarehouseOrderSearch(@Body() logiwaOrderSearchDto: LogiwaOrderSearchDto): Promise<any> {
+    return this.logiwaService.warehouseOrderSearch(logiwaOrderSearchDto);
   }
 
   @Post('shipment-report-all-search')
   logiwaShipmentReportAllSearch(@Body() logiwaShipmentReportSearchDto: LogiwaShipmentReportSearchDto): Promise<any> {
     return this.logiwaService.shipmentReportAllSearch(logiwaShipmentReportSearchDto);
+  }
+
+  @Post('warehouse-order-shipment-info-search')
+  warehouseOrderShipmentInfoSearch(@Body() logiwaShipmentReportSearchDto: LogiwaShipmentReportSearchDto): Promise<any> {
+    return this.logiwaService.warehouseOrderShipmentInfoSearch(logiwaShipmentReportSearchDto);
   }
 
   @Get('export-inventory-items')
@@ -83,7 +92,9 @@ export class LogiwaApiController {
   exportLogiwaChannelItemsTSV(@Res() res: Response, @Param('channelId') channelId: string): Promise<void> {
     const responseFileName = `logiwa_channel_items_${getCurrentDttm()}.tsv`;
     res.setHeader('Content-Disposition', `attachment; filename=${responseFileName}`);
-    this.logiwaService.exportLogiwaChannelItemsTSV(channelId && Number(channelId)).then((readable: Readable) => readable.pipe(res));
+    this.logiwaService
+      .exportLogiwaChannelItemsTSV(channelId && Number(channelId))
+      .then((readable: Readable) => readable.pipe(res));
     return;
   }
 }

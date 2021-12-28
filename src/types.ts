@@ -14,13 +14,13 @@ export enum ChannelType {
   WALMART = 'Walmart',
   EBAY = 'eBay',
   SEARS = 'Sears',
-  SHOPIFY = 'Shopify'
-};
+  SHOPIFY = 'Shopify',
+}
 
 export enum StoreType {
   HAB = 'Hat and Beyond',
   MA = 'Ma Croix',
-};
+}
 
 export enum AmazonSPFeedTypes {
   JSON_LISTINGS_FEED = 'JSON_LISTINGS_FEED',
@@ -63,11 +63,11 @@ export enum AmazonSPFeedDocumentContentTypes {
 }
 
 export enum AmazonSPFeedDocumentStandardEncryptionTypes {
-  AES = 'AES'
+  AES = 'AES',
 }
 
 export enum AmazonSPFeedDocumentCompressionAlgorithm {
-  GZIP = 'GZIP'
+  GZIP = 'GZIP',
 }
 
 export enum AmazonSPFeedProcessingStatusTypes {
@@ -114,4 +114,8 @@ export enum WalmartItemLifeCycleStatus {
 export enum WalmartItemPublishedStatus {
   PUBLISHED = 'PUBLISHED',
   UNPUBLISHEd = 'UNPUBLISHED',
+}
+
+export enum EbayLMSFeedTypes {
+  LMS_SET_SHIPMENT_TRACKING_INFO = 'LMS_SET_SHIPMENT_TRACKING_INFO',
 }

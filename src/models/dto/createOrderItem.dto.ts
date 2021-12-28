@@ -15,11 +15,24 @@ export class CreateOrderItemDto {
     const orderItem = new OrderItem();
     orderItem.order = order;
     orderItem.listingSku = dto.listingSku;
-    orderItem.inventory = inventory
+    orderItem.inventory = inventory;
     orderItem.unitPrice = dto.unitPrice;
     orderItem.unitQuantity = dto.unitQuantity;
     orderItem.garmentCost = dto.garmentCost;
 
     return orderItem;
+  }
+
+  static fromOrderItem(orderItem: OrderItem): CreateOrderItemDto {
+    const dto = new CreateOrderItemDto();
+    dto.channelOrderCode = orderItem.order.channelOrderCode;
+    dto.marketId = orderItem.order.market.marketId;
+    dto.listingSku = orderItem.listingSku;
+    dto.stdSku = orderItem.inventory?.stdSku;
+    dto.unitPrice = orderItem.unitPrice;
+    dto.unitQuantity = orderItem.unitQuantity;
+    dto.garmentCost = orderItem.garmentCost;
+
+    return dto;
   }
 }

@@ -8,10 +8,10 @@ export class Product {
   @PrimaryColumn({ type: 'char', length: 8 })
   productCode: string;
 
-  @Column({ type: 'varchar', length: 128})
+  @Column({ type: 'varchar', length: 128 })
   productTitle: string;
 
-  @ManyToOne(() => Brand, brand => brand.brandCode, {
+  @ManyToOne(() => Brand, (brand: Brand) => brand.brandCode, {
     nullable: true,
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
@@ -27,9 +27,9 @@ export class Product {
   @Column({ type: 'char', length: 1 })
   orderBySize: string;
 
-  @OneToMany(() => ManufacturingMap, manufacturingMap => manufacturingMap.product)
+  @OneToMany(() => ManufacturingMap, (manufacturingMap: ManufacturingMap) => manufacturingMap.product)
   manufacturingMaps: ManufacturingMap[];
 
-  @OneToMany(() => ProductMap, productMap => productMap.product)
+  @OneToMany(() => ProductMap, (productMap) => productMap.product)
   productMaps: ProductMap[];
 }

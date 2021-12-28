@@ -1,5 +1,5 @@
 export class DateTimeUtil {
-  private tokenObj: { tokenType: string, accessToken: string, expires: Date };
+  private tokenObj: { tokenType: string; accessToken: string; expires: Date };
 
   constructor() {
     this.tokenObj = null;
@@ -27,11 +27,12 @@ export class DateTimeUtil {
   toDateFromDateString(yyyymmddHHmiss: string): Date {
     return new Date(
       Number(yyyymmddHHmiss.substring(0, 4)),
-      Number(yyyymmddHHmiss.substring(4, 6))-1,
+      Number(yyyymmddHHmiss.substring(4, 6)) - 1,
       Number(yyyymmddHHmiss.substring(6, 8)),
       Number(yyyymmddHHmiss.substring(8, 10)),
       Number(yyyymmddHHmiss.substring(10, 12)),
-      Number(yyyymmddHHmiss.substring(12)));
+      Number(yyyymmddHHmiss.substring(12)),
+    );
   }
 
   getDttmFromDate(date: Date): string {
@@ -39,19 +40,19 @@ export class DateTimeUtil {
     const yyyy: number = date.getFullYear();
 
     // current month
-    const mm: string = ("0" + (date.getMonth() + 1)).slice(-2);
+    const mm: string = ('0' + (date.getMonth() + 1)).slice(-2);
 
     // current date
-    const dd: string = ("0" + date.getDate()).slice(-2);
+    const dd: string = ('0' + date.getDate()).slice(-2);
 
     // current hours
-    const hh: string = ("0" + date.getHours()).slice(-2);
+    const hh: string = ('0' + date.getHours()).slice(-2);
 
     // current minutes
-    const mi: string = ("0" + date.getMinutes()).slice(-2);
+    const mi: string = ('0' + date.getMinutes()).slice(-2);
 
     // current seconds
-    const ss: string = ("0" + date.getSeconds()).slice(-2);
+    const ss: string = ('0' + date.getSeconds()).slice(-2);
 
     return `${yyyy}${mm}${dd}${hh}${mi}${ss}`;
   }
@@ -61,7 +62,7 @@ export class DateTimeUtil {
   }
 
   getYesterDate(): Date {
-    return new Date(Date.now() - (1000 * 60 * 60 * 24));
+    return new Date(Date.now() - 1000 * 60 * 60 * 24);
   }
 
   getCurrentDttm(): string {
@@ -70,13 +71,13 @@ export class DateTimeUtil {
 
   getTimeFormatFromDate(date: Date): string {
     // current hours
-    const hh: string = ("0" + date.getHours()).slice(-2);
+    const hh: string = ('0' + date.getHours()).slice(-2);
 
     // current minutes
-    const mi: string = ("0" + date.getMinutes()).slice(-2);
+    const mi: string = ('0' + date.getMinutes()).slice(-2);
 
     // current seconds
-    const ss: string = ("0" + date.getSeconds()).slice(-2);
+    const ss: string = ('0' + date.getSeconds()).slice(-2);
 
     return `${hh}:${mi}:${ss}`;
   }
@@ -107,7 +108,7 @@ export class DateTimeUtil {
     const oneHour = oneMinute * 60;
     const oneDay = oneHour * 24;
 
-    return new Date(srcDate.getTime() - ((oneDay * days) + (oneHour * hours) + (oneMinute * minutes) + (oneSecond * seconds)));
+    return new Date(srcDate.getTime() - (oneDay * days + oneHour * hours + oneMinute * minutes + oneSecond * seconds));
   }
 
   addDate(srcDate: Date, days: number, hours: number, minutes: number, seconds: number): Date {
@@ -116,50 +117,64 @@ export class DateTimeUtil {
     const oneHour = oneMinute * 60;
     const oneDay = oneHour * 24;
 
-    return new Date(srcDate.getTime() + ((oneDay * days) + (oneHour * hours) + (oneMinute * minutes) + (oneSecond * seconds)));
+    return new Date(srcDate.getTime() + (oneDay * days + oneHour * hours + oneMinute * minutes + oneSecond * seconds));
   }
 }
 
 export const getCurrentDate = (): Date => new Date(Date.now());
 export const getMidnight = (date: Date): Date => new Date(date.setHours(0, 0, 0, 0));
-export const toDateFromISOString = (isoDate: string) : Date => new Date(isoDate);
+export const toDateFromISOString = (isoDate: string): Date => new Date(isoDate);
 
 export const toDateFromDateString = (dateStr: string): Date =>
   dateStr.lastIndexOf('Z') > -1
     ? toDateFromISOString(dateStr)
     : new Date(
-      Number(dateStr.substring(0, 4)),
-      Number(dateStr.substring(4, 6))-1,
-      Number(dateStr.substring(6, 8)),
-      Number(dateStr.substring(8, 10)),
-      Number(dateStr.substring(10, 12)),
-      Number(dateStr.substring(12)));
+        Number(dateStr.substring(0, 4)),
+        Number(dateStr.substring(4, 6)) - 1,
+        Number(dateStr.substring(6, 8)),
+        Number(dateStr.substring(8, 10)),
+        Number(dateStr.substring(10, 12)),
+        Number(dateStr.substring(12)),
+      );
 
 export const getDttmFromDate = (date: Date): string => {
   // current year
   const yyyy: number = date.getFullYear();
 
   // current month
-  const mm: string = ("0" + (date.getMonth() + 1)).slice(-2);
+  const mm: string = ('0' + (date.getMonth() + 1)).slice(-2);
 
   // current date
-  const dd: string = ("0" + date.getDate()).slice(-2);
+  const dd: string = ('0' + date.getDate()).slice(-2);
 
   // current hours
-  const hh: string = ("0" + date.getHours()).slice(-2);
+  const hh: string = ('0' + date.getHours()).slice(-2);
 
   // current minutes
-  const mi: string = ("0" + date.getMinutes()).slice(-2);
+  const mi: string = ('0' + date.getMinutes()).slice(-2);
 
   // current seconds
-  const ss: string = ("0" + date.getSeconds()).slice(-2);
+  const ss: string = ('0' + date.getSeconds()).slice(-2);
 
   return `${yyyy}${mm}${dd}${hh}${mi}${ss}`;
-}
+};
+
+export const getTimeFormatFromDate = (date: Date): string => {
+  // current hours
+  const hh: string = ('0' + date.getHours()).slice(-2);
+
+  // current minutes
+  const mi: string = ('0' + date.getMinutes()).slice(-2);
+
+  // current seconds
+  const ss: string = ('0' + date.getSeconds()).slice(-2);
+
+  return `${hh}:${mi}:${ss}`;
+};
 
 export const getCurrentDttm = (): string => {
   return getDttmFromDate(getCurrentDate());
-}
+};
 
 export const addDate = (srcDate: Date, days: number, hours: number, minutes: number, seconds: number): Date => {
   const oneSecond = 1000;
@@ -167,8 +182,8 @@ export const addDate = (srcDate: Date, days: number, hours: number, minutes: num
   const oneHour = oneMinute * 60;
   const oneDay = oneHour * 24;
 
-  return new Date(srcDate.getTime() + ((oneDay * days) + (oneHour * hours) + (oneMinute * minutes) + (oneSecond * seconds)));
-}
+  return new Date(srcDate.getTime() + (oneDay * days + oneHour * hours + oneMinute * minutes + oneSecond * seconds));
+};
 
 export const subtractDate = (srcDate: Date, days: number, hours: number, minutes: number, seconds: number): Date => {
   const oneSecond = 1000;
@@ -176,12 +191,12 @@ export const subtractDate = (srcDate: Date, days: number, hours: number, minutes
   const oneHour = oneMinute * 60;
   const oneDay = oneHour * 24;
 
-  return new Date(srcDate.getTime() - ((oneDay * days) + (oneHour * hours) + (oneMinute * minutes) + (oneSecond * seconds)));
-}
+  return new Date(srcDate.getTime() - (oneDay * days + oneHour * hours + oneMinute * minutes + oneSecond * seconds));
+};
 
 /**
-   * Return date as MM.dd.yyyy HH:mi:ss" format
-   */
+ * Return date as MM.dd.yyyy HH:mi:ss" format
+ */
 export const toLogiwaDateFormat = (date: Date): string => {
   const yyyy = date.getFullYear();
   const mm = ('0' + (date.getMonth() + 1)).substr(-2);
@@ -191,7 +206,7 @@ export const toLogiwaDateFormat = (date: Date): string => {
   const ss = ('0' + date.getSeconds()).substr(-2);
 
   return `${mm}.${dd}.${yyyy} ${hh}:${mi}:${ss}`;
-}
+};
 
 export const toAmazonDateFormat = (date: Date): string => {
   const yyyy = date.getUTCFullYear();
@@ -202,5 +217,4 @@ export const toAmazonDateFormat = (date: Date): string => {
   const ss = ('0' + date.getUTCSeconds()).substr(-2);
 
   return `${yyyy}${mm}${dd}T${hh}${mi}${ss}Z`;
-
-}
+};

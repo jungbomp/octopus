@@ -41,6 +41,6 @@ export class InventoriesController {
 
   @Post('logiwa/load-inventory-data-from-logiwa')
   loadInventoryDataFromLogiwa(@Body() logiwaInventoryItemSearchDto: LogiwaInventoryitemSearchDto): Promise<void> {
-    return this.inventoriesService.loadInventoryDataFromLogiwa(logiwaInventoryItemSearchDto)
+    return this.inventoriesService.loadInventoryDataFromLogiwa(logiwaInventoryItemSearchDto);
   }
 }

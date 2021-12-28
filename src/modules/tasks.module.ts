@@ -9,7 +9,15 @@ import { OrdersModule } from './orders.module';
 import { ProductBundlesModule } from './productBundles.module';
 
 @Module({
-  imports: [ClockInModule, InterchangeableGroupsModule, InventoriesModule, ListingsModule, LogiwaApiModule, OrdersModule, ProductBundlesModule],
+  imports: [
+    ClockInModule,
+    InterchangeableGroupsModule,
+    InventoriesModule,
+    ListingsModule,
+    LogiwaApiModule,
+    OrdersModule,
+    ProductBundlesModule,
+  ],
   providers: [TasksService],
 })
 export class TasksModule {}
