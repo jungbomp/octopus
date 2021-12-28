@@ -232,10 +232,18 @@ export class OrdersService {
       const user = new User();
       user.employeeId = createOrderDto.employeeId;
 
+      const masterOrderMarket = new Market();
+      masterOrderMarket.marketId = createOrderDto.masterMarketId;
+
+      const masterOrder = new Orders();
+      masterOrder.channelOrderCode = createOrderDto.masterChannelOrderCode;
+      masterOrder.market = masterOrderMarket;
+
       const order = CreateOrderDto.toOrder(
         createOrderDto,
         market,
-        (createOrderDto.employeeId || '').length > 0 ? user : null,
+        (createOrderDto.employeeId ?? '').length > 0 ? user : null,
+        (createOrderDto.masterChannelOrderCode ?? '').length > 0 ? masterOrder : null,
       );
       order.lastModifiedDttm = getCurrentDttm();
 
@@ -428,7 +436,7 @@ export class OrdersService {
   // Key is master warehouse order code, value is merged CreateOrderDto
   private async updateMergedOrdersTrackingNo(mergedOrderMap: Map<string, CreateOrderDto[]>): Promise<number> {
     this.logger.log(`Update merged orders tracking number to dto`);
-    let createOrderDtos: CreateOrderDto[];
+    let createOrderDtos: CreateOrderDto[] = [];
     const masterWarehouseOrderCodes: string[] = [...mergedOrderMap.keys()];
 
     for (let i = 0; i < masterWarehouseOrderCodes.length; i++) {
@@ -445,6 +453,7 @@ export class OrdersService {
         const order: Orders = await this.findOne(logiwaOrder.ChannelOrderCode, findMarketId(channel, store));
         const dtos: CreateOrderDto[] = mergedOrderMap.get(masterWarehouseOrderCodes[i]);
         createOrderDtos = [
+          ...createOrderDtos,
           ...dtos.map(
             (dto: CreateOrderDto): CreateOrderDto => ({
               ...dto,
@@ -459,6 +468,7 @@ export class OrdersService {
 
     let updated = 0;
     if (createOrderDtos.length > 0) {
+      console.log(createOrderDtos);
       updated = await this.createBatch(createOrderDtos);
     }
 
