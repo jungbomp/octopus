@@ -207,9 +207,16 @@ export class OrdersService {
 
   async create(createOrderDto: CreateOrderDto): Promise<Orders> {
     const market = await this.marketsService.findOne(createOrderDto.marketId);
+
     const user =
       (createOrderDto.employeeId || '').length > 0 ? await this.usersService.findOne(createOrderDto.employeeId) : null;
-    const order = CreateOrderDto.toOrder(createOrderDto, market, user);
+
+    const masterOrder: Orders =
+      (createOrderDto.masterChannelOrderCode ?? '').length > 0
+        ? await this.findOne(createOrderDto.masterChannelOrderCode, createOrderDto.masterMarketId, false)
+        : null;
+
+    const order = CreateOrderDto.toOrder(createOrderDto, market, user, masterOrder);
     const orderItems = await Promise.all(
       createOrderDto.orderItems.map(async (orderItemDto: CreateOrderItemDto) => {
         const inventory = await this.inventoriesService.findOne(orderItemDto.stdSku);
@@ -468,7 +475,6 @@ export class OrdersService {
 
     let updated = 0;
     if (createOrderDtos.length > 0) {
-      console.log(createOrderDtos);
       updated = await this.createBatch(createOrderDtos);
     }
 
