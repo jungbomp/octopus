@@ -2,6 +2,7 @@ node_modules
 dist
 credentials.json
 .env.development
+.env.production
 token.json
 package-lock.json
 .DS_Store
