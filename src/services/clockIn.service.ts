@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { CreateClockInDto } from '../models/dto/createClockIn.dto';
 import { ClockIn } from '../models/clockIn.entity';
 import { GoogleApiService } from './googleApi.service';
-import { DateTimeUtil } from '../utils/dateTime.util';
+import { DateTimeUtil, getCurrentDate } from '../utils/dateTime.util';
 import { ENV, ENVIRONMENT } from 'src/constants';
 
 @Injectable()
@@ -83,11 +83,21 @@ export class ClockInService {
 
     const fileId = this.googleSheetFileId;
     const filemeta = await this.googleApiService.getFileMetadata(fileId);
-    const curDate = this.dateTimeUtil.getCurrentDate();
-    const curYear = curDate.getFullYear();
+    const curDate: Date = getCurrentDate();
+    const curYear: number = curDate.getFullYear();
+    const curMonth: number = curDate.getMonth() + 1;
     const periods = filemeta.title
       .match(/([0-9]{2}|[0-9]{1})\/([0-9]{2}|[0-9]{1})/g)
-      .map((period: string): Date => new Date(`${curYear}/${period}`))
+      .map((period: string): Date => {
+        let year = curYear;
+        if (curMonth === 12 && period.startsWith('01')) {
+          year = year + 1;
+        } else if (curMonth === 1 && period.startsWith('12')) {
+          year = year - 1;
+        }
+
+        return new Date(`${year}/${period}`);
+      })
       .sort((lhs: Date, rhs: Date) => lhs.getTime() - rhs.getTime());
 
     if (periods[1] < curDate) {

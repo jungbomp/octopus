@@ -338,8 +338,8 @@ export class ProductOrdersService {
       this.logger.log(error);
     }
 
-    // this.orderFormConfig.latestSheetFileId = undefined;
-    // return null;
+    this.orderFormConfig.latestSheetFileId = undefined;
+    return undefined;
   }
 
   private async getLatestGoogleSheetId(): Promise<string> {
