@@ -17,16 +17,22 @@ export class WalmartApiService {
   private habToken: WalmartApiAccessTokenType;
   private maCroixToken: WalmartApiAccessTokenType;
 
-  constructor(
-    private readonly configService: ConfigService,
-  ) {
+  constructor(private readonly configService: ConfigService) {
     this.walmartApiConfig = this.configService.get<WalmartApiConfig>('walmartApiConfig');
     this.habToken = null;
     this.maCroixToken = null;
   }
 
-  async getItems(store: StoreType, nextCursor?: string, lifeCycleStatus?: WalmartItemLifeCycleStatus, publishedStatus?: WalmartItemPublishedStatus): Promise<any> {
-    const queryParam = new Map<string, string>([['limit', '20'], ['nextCursor', nextCursor ?? '*']]);
+  async getItems(
+    store: StoreType,
+    nextCursor?: string,
+    lifeCycleStatus?: WalmartItemLifeCycleStatus,
+    publishedStatus?: WalmartItemPublishedStatus,
+  ): Promise<any> {
+    const queryParam = new Map<string, string>([
+      ['limit', '20'],
+      ['nextCursor', nextCursor ?? '*'],
+    ]);
     if (lifeCycleStatus) {
       queryParam.set('lifeCycleStatus', encodeURIComponent(lifeCycleStatus));
     }
@@ -42,7 +48,12 @@ export class WalmartApiService {
     let items = [];
     let response = { nextCursor: undefined, ItemResponse: [], totalItems: 0 };
     do {
-      response = await this.getItems(store, response.nextCursor, WalmartItemLifeCycleStatus.ACTIVE, WalmartItemPublishedStatus.PUBLISHED);
+      response = await this.getItems(
+        store,
+        response.nextCursor,
+        WalmartItemLifeCycleStatus.ACTIVE,
+        WalmartItemPublishedStatus.PUBLISHED,
+      );
       items = [...items, ...response.ItemResponse];
       this.logger.log(`Retrieve walmart ${store} item ${items.length}/${response.totalItems}`);
     } while (response.nextCursor);
@@ -68,7 +79,7 @@ export class WalmartApiService {
 
   async getAllInventories(store: StoreType): Promise<any[]> {
     this.logger.log('getAllInventories');
-    let  inventories = [];
+    let inventories = [];
     let response = { meta: { nextCursor: undefined, totalCount: 0 }, elements: { inventories: [] } };
     do {
       response = await this.getInventories(store, 50, response.meta.nextCursor);
@@ -79,42 +90,61 @@ export class WalmartApiService {
     return inventories;
   }
 
-  async updateInventory(store: StoreType, {sku, amount }: WalmartApiUpdateInventoryDto): Promise<any> {
+  async updateInventory(store: StoreType, { sku, amount }: WalmartApiUpdateInventoryDto): Promise<any> {
     const data = {
       sku,
       quantity: {
         unit: 'EACH',
-        amount
-      }
-    }
+        amount,
+      },
+    };
 
-    return await this.walmartApiCall('inventory', 'put', {}, JSON.stringify(data), store, new Map<string, string>([['sku', sku]]));
+    return await this.walmartApiCall(
+      'inventory',
+      'put',
+      {},
+      JSON.stringify(data),
+      store,
+      new Map<string, string>([['sku', sku]]),
+    );
   }
 
-  async bulkItemInventoryUpdate(store: StoreType, walmartApiUpdateInventories: WalmartApiUpdateInventoryDto[]): Promise<any> {
-    const inventory = walmartApiUpdateInventories.map((walmartApiUpdateInventory: WalmartApiUpdateInventoryDto): any => ({
-      sku: walmartApiUpdateInventory.sku,
-      quantity: {
-        unit: 'EACH',
-        amount: walmartApiUpdateInventory.amount
-      }
-    }));
-    
+  async bulkItemInventoryUpdate(
+    store: StoreType,
+    walmartApiUpdateInventories: WalmartApiUpdateInventoryDto[],
+  ): Promise<any> {
+    const inventory = walmartApiUpdateInventories.map(
+      (walmartApiUpdateInventory: WalmartApiUpdateInventoryDto): any => ({
+        sku: walmartApiUpdateInventory.sku,
+        quantity: {
+          unit: 'EACH',
+          amount: walmartApiUpdateInventory.amount,
+        },
+      }),
+    );
+
     const requestJson = {
       InventoryHeader: {
-        version: '1.4'
+        version: '1.4',
       },
-      Inventory: inventory
+      Inventory: inventory,
     };
 
     const formData: FormData = new FormData();
     formData.append('file', JSON.stringify(requestJson), 'feeds.json');
 
     const headers = {
-      ...formData.getHeaders()
-    }
+      ...formData.getHeaders(),
+    };
 
-    return await this.walmartApiCall('feeds', 'post', headers, formData, store, new Map<string, string>([['feedType', 'inventory']]));
+    return await this.walmartApiCall(
+      'feeds',
+      'post',
+      headers,
+      formData,
+      store,
+      new Map<string, string>([['feedType', 'inventory']]),
+    );
   }
 
   async getFeedStatus(store: StoreType, feedId?: string): Promise<any> {
@@ -135,32 +165,32 @@ export class WalmartApiService {
     const shipDateTime = Date.now();
 
     const orderLine = order.orderLines.orderLine
-      .filter((orderLine: any) => {
-        const trackingInfo = orderLine.orderLineStatuses.orderLineStatus[0].trackingInfo;
+      .filter((line: any) => {
+        const trackingInfo = line.orderLineStatuses.orderLineStatus[0].trackingInfo;
         return (trackingInfo?.trackingNumber || '').length === 0 || trackingInfo.trackingNumber !== trackingNumber;
       })
-      .map(orderLine => ({
-        lineNumber: orderLine.lineNumber,
+      .map((line: any) => ({
+        lineNumber: line.lineNumber,
         orderLineStatuses: {
           orderLineStatus: [
             {
-              status: "Shipped",
+              status: 'Shipped',
               statusQuantity: {
-                unitOfMeasurement: "EACH",
-                amount: "1"
+                unitOfMeasurement: 'EACH',
+                amount: '1',
               },
               trackingInfo: {
                 shipDateTime,
                 carrierName: {
                   otherCarrier: null,
-                  carrier: "USPS"
+                  carrier: 'USPS',
                 },
-                methodCode: "Standard",
-                trackingNumber
-              }
-            }
-          ]
-        }
+                methodCode: 'Standard',
+                trackingNumber,
+              },
+            },
+          ],
+        },
       }));
 
     if (orderLine.length === 0) {
@@ -171,28 +201,61 @@ export class WalmartApiService {
     const data = {
       orderShipment: {
         orderLines: {
-          orderLine
-        }
-      }
-    }
+          orderLine,
+        },
+      },
+    };
 
     return await this.walmartApiCall(`orders/${orderNumber}/shipping`, 'post', {}, JSON.stringify(data), store);
   }
 
   async exportWalmarteItemsTSV(store: StoreType): Promise<Readable> {
-    const headers: string[] = ['Store', 'SKU', 'wpid', 'upc', 'gtin', 'productName', 'productType', 'price', 'publishedStatus', 'lifecycleStatus'];
+    const headers: string[] = [
+      'Store',
+      'SKU',
+      'wpid',
+      'upc',
+      'gtin',
+      'productName',
+      'productType',
+      'price',
+      'publishedStatus',
+      'lifecycleStatus',
+    ];
     const bodies: string[][] = [];
-    
+
     const items = await this.getAllItems(store);
-    items.forEach(item => bodies.push([store, item.sku, item.wpid, item.upc, item.gtin, item.productName, item.priductType, item.price.amount, item.publishedStatus, item.lifecycleStatus]));
+    items.forEach((item) =>
+      bodies.push([
+        store,
+        item.sku,
+        item.wpid,
+        item.upc,
+        item.gtin,
+        item.productName,
+        item.priductType,
+        item.price.amount,
+        item.publishedStatus,
+        item.lifecycleStatus,
+      ]),
+    );
 
     const tsvRows = [headers.join('\t'), ...bodies.map((body: string[]): string => body.join('\t'))];
-    const buffer =  Buffer.from(tsvRows.join('\n'), 'utf8');
+    const buffer = Buffer.from(tsvRows.join('\n'), 'utf8');
     return Readable.from(buffer);
   }
 
-  private async walmartApiCall(url: string, method: Method, headers, data: any, store: StoreType, queryParam?: Map<string, string>, setAccessToken = true): Promise<any> {
-    const clientToken: WalmartApiClientTokenType = store === StoreType.HAB ? this.walmartApiConfig.habClientToken : this.walmartApiConfig.maCroixClientToken;
+  private async walmartApiCall(
+    url: string,
+    method: Method,
+    headers,
+    data: any,
+    store: StoreType,
+    queryParam?: Map<string, string>,
+    setAccessToken = true,
+  ): Promise<any> {
+    const clientToken: WalmartApiClientTokenType =
+      store === StoreType.HAB ? this.walmartApiConfig.habClientToken : this.walmartApiConfig.maCroixClientToken;
     const { access_token } = setAccessToken ? await this.authorize(store) : { access_token: null };
 
     try {
@@ -200,16 +263,18 @@ export class WalmartApiService {
         method,
         url: `${this.walmartApiConfig.baseUrl}/${url}${queryParam?.size > 0 ? `?${getQueryString(queryParam)}` : ''}`,
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${Buffer.from(`${clientToken.clientId}:${clientToken.clientSecret}`).toString('base64')}`,
+          Authorization: `Basic ${Buffer.from(`${clientToken.clientId}:${clientToken.clientSecret}`).toString(
+            'base64',
+          )}`,
           'WM_QOS.CORRELATION_ID': guid(),
           'WM_SVC.NAME': 'Walmart Service Name',
           ...headers,
-          ...(access_token ? { 'WM_SEC.ACCESS_TOKEN': access_token } : {})
+          ...(access_token ? { 'WM_SEC.ACCESS_TOKEN': access_token } : {}),
         },
         validateStatus: (status: number): boolean => status >= 200 && status < 521,
-        data: data
+        data: data,
       });
 
       if (res.status !== 200) {
@@ -240,42 +305,42 @@ export class WalmartApiService {
     } else if (store === StoreType.MA && this.maCroixToken && new Date(Date.now()) < this.maCroixToken.expires) {
       return this.maCroixToken;
     }
-  
+
     const formBody = [];
     formBody.push(`${encodeURIComponent('grant_type')}=${encodeURIComponent('client_credentials')}`);
     const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
-    
+
     const token = await this.walmartApiCall('token', 'post', headers, formBody.join('&'), store, undefined, false);
     const walmartApiToken: WalmartApiAccessTokenType = {
       ...token,
-      expires: new Date(Date.now() + ((token.expires_in - 5) * 1000))
-    }
+      expires: new Date(Date.now() + (token.expires_in - 5) * 1000),
+    };
 
     if (store === StoreType.HAB) {
       this.habToken = walmartApiToken;
     } else {
       this.maCroixToken = walmartApiToken;
     }
-    
+
     return walmartApiToken;
   }
 }
 
 interface WalmartApiClientTokenType {
-  clientId: string,
-  clientSecret: string
+  clientId: string;
+  clientSecret: string;
 }
 
 interface WalmartApiConfig {
-  username: string,
-  password: string,
-  baseUrl: string,
-  habClientToken: WalmartApiClientTokenType,
-  maCroixClientToken: WalmartApiClientTokenType
+  username: string;
+  password: string;
+  baseUrl: string;
+  habClientToken: WalmartApiClientTokenType;
+  maCroixClientToken: WalmartApiClientTokenType;
 }
 
 interface WalmartApiAccessTokenType {
-  access_token: string,
-  token_type: string,
-  expires: Date
+  access_token: string;
+  token_type: string;
+  expires: Date;
 }

@@ -7,16 +7,16 @@ export class Inventory {
   @PrimaryColumn({ type: 'varchar', length: 45 })
   stdSku: string;
 
-  @ManyToOne(() => Product, product => product.productCode, {
+  @ManyToOne(() => Product, (product: Product) => product.productCode, {
     nullable: true,
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     eager: true,
   })
   @JoinColumn()
-  product: Product;
+  product?: Product;
 
-  @Column({ type: 'varchar', length: 45})
+  @Column({ type: 'varchar', length: 45 })
   productSupplier: string;
 
   @Column({ type: 'varchar', length: 200 })
@@ -27,7 +27,7 @@ export class Inventory {
 
   @Column({ type: 'varchar', length: 100 })
   productColor: string;
-  
+
   @Column({ type: 'varchar', length: 100 })
   productDesign: string;
 
@@ -55,7 +55,7 @@ export class Inventory {
   @Column({ type: 'float' })
   productHeight: number;
 
-  @ManyToOne(() => StdSize, stdSize => stdSize.sizeCode, {
+  @ManyToOne(() => StdSize, (stdSize: StdSize) => stdSize.sizeCode, {
     nullable: true,
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
@@ -69,4 +69,7 @@ export class Inventory {
 
   @Column({ type: 'char', length: 1 })
   validYn: string;
+
+  @Column({ type: 'varchar', length: 24, nullable: true })
+  lastModifier?: string;
 }

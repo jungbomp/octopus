@@ -1,0 +1,60 @@
+{
+  "env": {
+    "node": true,
+    "jest": true
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "tsconfig.json",
+    "ecmaVersion": "latest", 
+    "sourceType": "module"
+  },
+  "plugins": ["@typescript-eslint/eslint-plugin", "prettier"],
+  "extends": [
+    "plugin:import/typescript",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended",
+    "prettier"
+  ],
+  "root": true,
+  "rules": {
+    "no-tabs": 2,
+    "@typescript-eslint/interface-name-prefix": "off",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "no-unused-vars": "off", // The base rule must be disabled as it can report incorrect errors when activated together with the extended ts rule
+    "import/no-unresolved": "off",
+    "no-useless-concat": "error",
+    "no-unused-expressions": ["error", { "allowTernary": true }],
+    "chai-friendly/no-unused-expressions": "off",
+    "linebreak-style": "off",
+    "import/prefer-default-export": "off",
+    "import/extensions": "off",
+    "@typescript-eslint/no-unused-vars": "error", // It adds support for TypeScript features, such as types
+    "no-use-before-define": "off", // note you must disable the base rule as it can report incorrect errors
+    "@typescript-eslint/no-use-before-define": ["error"],
+    "no-shadow": "off",
+    "@typescript-eslint/no-shadow": ["error", { "ignoreTypeValueShadow": true }]
+  },
+  "settings": {
+    "node": {
+      "extensions": [".js", ".ts"],
+      "moduleDirectory": ["node_modules", "src/"]
+    },
+    "import/resolver": {
+      "alias": {
+        "map": [
+          ["src", "./src"]
+        ],
+        "extensions": [".ts", ".js", ".json"]
+      },
+      "babel-module": {},
+      "node": {
+        "extensions": [".js", ".ts"],
+        "moduleDirectory": ["node_modules", "src/"]
+      }
+    }
+  }
+}

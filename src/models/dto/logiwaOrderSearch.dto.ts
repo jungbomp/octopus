@@ -6,8 +6,9 @@ export class LogiwaOrderSearchDto {
   lastModifiedDateStart: string;
   lastModifiedDateEnd: string;
   channelOrderCode: string;
+  code: string;
   channelId: number;
-  
+
   constructor(
     selectedPageIndex: number,
     orderDate?: string,
@@ -16,6 +17,7 @@ export class LogiwaOrderSearchDto {
     lastModifiedDateStart?: string,
     lastModifiedDateEnd?: string,
     channelOrderCode?: string,
+    code?: string,
     channelId?: number,
   ) {
     this.selectedPageIndex = selectedPageIndex;
@@ -25,6 +27,7 @@ export class LogiwaOrderSearchDto {
     this.lastModifiedDateStart = lastModifiedDateStart;
     this.lastModifiedDateEnd = lastModifiedDateEnd;
     this.channelOrderCode = channelOrderCode;
+    this.code = code;
     this.channelId = channelId;
   }
 }

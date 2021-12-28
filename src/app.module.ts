@@ -45,95 +45,97 @@ import { AWSModule } from './modules/aws.module';
       }),
       inject: [ConfigService],
     }),
-    RouterModule.forRoutes([{ 
-      path: '/api/v1',
-      children: [
-        {
-          path: '/',
-          module: MarketsModule,
-        },
-        {
-          path: '/',
-          module: UsersModule,
-        },
-        {
-          path: '/',
-          module: ClockInModule,
-        },
-        {
-          path: '/',
-          module: BrandsModule,
-        },
-        {
-          path: '/',
-          module: VendorsModule,
-        },
-        {
-          path: '/',
-          module: VendorMapsModule,
-        },
-        {
-          path: '/',
-          module: ProductsModule,
-        },
-        {
-          path: '/',
-          module: StdSizesModule,
-        },
-        {
-          path: '/',
-          module: InventoriesModule,
-        },
-        {
-          path: '/',
-          module: ProductMapsModule,
-        },
-        {
-          path: '/',
-          module: ProductOrdersModule,
-        },
-        {
-          path: '/',
-          module: ManufacturingMapsModule,
-        },
-        {
-          path: '/',
-          module: OrdersModule,
-        },
-        {
-          path: '/',
-          module: ListingsModule,
-        },
-        {
-          path: '/',
-          module: WalmartApiModule,
-        },
-        {
-          path: '/',
-          module: LogiwaApiModule,
-        },
-        {
-          path: '/',
-          module: EbayApiModule,
-        },
-        {
-          path: '/',
-          module: AmazonSPApiModule,
-        },
-        {
-          path: '/',
-          module: InterchangeableGroupsModule,
-        },
-        {
-          path: '/',
-          module: AWSModule,
-        },
-        {
-          path: '/',
-          module: ProductBundlesModule,
-        }
-      ],
-    }]),
+    RouterModule.forRoutes([
+      {
+        path: '/api/v1',
+        children: [
+          {
+            path: '/',
+            module: MarketsModule,
+          },
+          {
+            path: '/',
+            module: UsersModule,
+          },
+          {
+            path: '/',
+            module: ClockInModule,
+          },
+          {
+            path: '/',
+            module: BrandsModule,
+          },
+          {
+            path: '/',
+            module: VendorsModule,
+          },
+          {
+            path: '/',
+            module: VendorMapsModule,
+          },
+          {
+            path: '/',
+            module: ProductsModule,
+          },
+          {
+            path: '/',
+            module: StdSizesModule,
+          },
+          {
+            path: '/',
+            module: InventoriesModule,
+          },
+          {
+            path: '/',
+            module: ProductMapsModule,
+          },
+          {
+            path: '/',
+            module: ProductOrdersModule,
+          },
+          {
+            path: '/',
+            module: ManufacturingMapsModule,
+          },
+          {
+            path: '/',
+            module: OrdersModule,
+          },
+          {
+            path: '/',
+            module: ListingsModule,
+          },
+          {
+            path: '/',
+            module: WalmartApiModule,
+          },
+          {
+            path: '/',
+            module: LogiwaApiModule,
+          },
+          {
+            path: '/',
+            module: EbayApiModule,
+          },
+          {
+            path: '/',
+            module: AmazonSPApiModule,
+          },
+          {
+            path: '/',
+            module: InterchangeableGroupsModule,
+          },
+          {
+            path: '/',
+            module: AWSModule,
+          },
+          {
+            path: '/',
+            module: ProductBundlesModule,
+          },
+        ],
+      },
+    ]),
     MarketsModule,
     UsersModule,
     ClockInModule,

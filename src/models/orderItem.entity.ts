@@ -4,7 +4,7 @@ import { Orders } from './orders.entity';
 
 @Entity()
 export class OrderItem {
-  @ManyToOne(() => Orders, order => order.channelOrderCode, {
+  @ManyToOne(() => Orders, (order: Orders) => order.channelOrderCode, {
     primary: true,
     nullable: false,
     onUpdate: 'CASCADE',
@@ -17,7 +17,7 @@ export class OrderItem {
   @PrimaryColumn({ type: 'char', length: 45 })
   listingSku: string;
 
-  @ManyToOne(() => Inventory, inventory => inventory.stdSku, {
+  @ManyToOne(() => Inventory, (inventory: Inventory) => inventory.stdSku, {
     nullable: true,
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',

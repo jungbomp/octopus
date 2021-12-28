@@ -1,4 +1,4 @@
-import {  Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { Method } from 'axios';
 import { createCipheriv, createDecipheriv, Cipher } from 'crypto';
@@ -29,17 +29,16 @@ import {
   AmazonSPFeedTypes,
   AmazonSPListingsFeedOperationTypes,
   AmazonSPPatchOperations,
-  StoreType
+  StoreType,
 } from 'src/types';
 
-import { getCurrentDate,  toAmazonDateFormat, toDateFromDateString } from '../utils/dateTime.util';
+import { getCurrentDate, toAmazonDateFormat, toDateFromDateString } from '../utils/dateTime.util';
 import { getQueryString } from '../utils/request.util';
 import { AmazonSPApiListingsFeedMessage } from 'src/models/amazonSP/amazonSPApiListingsFeedMessage';
 import { AmazonSPApiOrderFulfillmentFeedMessage } from 'src/models/amazonSP/amazonSPApiOrderFulfillmentFeedMessage';
 
 @Injectable()
 export class AmazonSPApiService {
-
   private readonly logger = new Logger(AmazonSPApiService.name);
   private readonly awsTermination = 'aws4_request';
   private readonly algorithm = 'AWS4-HMAC-SHA256';
@@ -52,11 +51,9 @@ export class AmazonSPApiService {
   private awsIamConfig: AwsIamConfig;
   private habToken: AmazonSPApiAccessTokenType;
   private maCroixToken: AmazonSPApiAccessTokenType;
-  private arnAssumeRole: AssumeRoleType; 
+  private arnAssumeRole: AssumeRoleType;
 
-  constructor(
-    private readonly configService: ConfigService,
-  ) {
+  constructor(private readonly configService: ConfigService) {
     this.amazonSPApiConfig = this.configService.get<AmazonSPApiConfig>('amazonSPApiConfig');
     this.awsIamConfig = this.configService.get<AwsIamConfig>('awsIamConfig');
   }
@@ -80,38 +77,45 @@ export class AmazonSPApiService {
             {
               fulfillment_channel_code: 'AMAZON_NA',
               is_inventory_available: true,
-              quantity: 30
-            }
-          ]
+              quantity: 30,
+            },
+          ],
         },
         {
           op: 'replace',
           path: '/attributes/supplier_declared_dg_hz_regulation',
           value: [
             {
-              value: 'not_applicable'
-            }
-          ]
+              value: 'not_applicable',
+            },
+          ],
         },
         {
           op: 'replace',
           path: '/attributes/batteries_required',
           value: [
             {
-              value: false
-            }
-          ]
-        }
-      ]
-    }
+              value: false,
+            },
+          ],
+        },
+      ],
+    };
 
-    return this.amazonSPApiCall(`/listings/2020-09-01/items/A2GY2PNPNA7TY6/${sku}`, 'PATCH', {}, body, queryParam, store);
+    return this.amazonSPApiCall(
+      `/listings/2020-09-01/items/A2GY2PNPNA7TY6/${sku}`,
+      'PATCH',
+      {},
+      body,
+      queryParam,
+      store,
+    );
   }
 
   async getOrders(store: StoreType, ordersRequest: AmazonSPApiOrdersRequest): Promise<any> {
     const queryParam = new Map<string, string>();
     queryParam.set('MarketplaceIds', this.marketPlaceId);
-    
+
     if (ordersRequest.createdAfter) {
       const createdAfter: string = toDateFromDateString(ordersRequest.createdAfter).toISOString();
       queryParam.set('CreatedAfter', createdAfter);
@@ -156,9 +160,9 @@ export class AmazonSPApiService {
           {
             code: 'InvalidInput',
             message: 'Either feedTypes or nextToken is required',
-            details: 'feedTypes or nextToken'
-          }
-        ]
+            details: 'feedTypes or nextToken',
+          },
+        ],
       };
     }
 
@@ -168,7 +172,7 @@ export class AmazonSPApiService {
     if (feedsRequest.feedTypes) {
       queryParam.set('feedTypes', feedsRequest.feedTypes);
     }
-    
+
     if (feedsRequest.pageSize) {
       queryParam.set('pageSize', `${Math.min(1, Math.max(100, feedsRequest.pageSize))}`);
     }
@@ -198,7 +202,10 @@ export class AmazonSPApiService {
     return this.amazonSPApiCall(`/feeds/${this.feedVersion}/feeds/${feedId}`, 'GET', {}, null, null, store);
   }
 
-  async createFeed(store: StoreType, createFeedSpecification: AmazonSPApiCreateFeedSpecification): Promise<AmazonSPApiCreateFeedResponse> {
+  async createFeed(
+    store: StoreType,
+    createFeedSpecification: AmazonSPApiCreateFeedSpecification,
+  ): Promise<AmazonSPApiCreateFeedResponse> {
     if (!createFeedSpecification.marketplaceIds) {
       createFeedSpecification.marketplaceIds = [this.marketPlaceId];
     }
@@ -206,74 +213,125 @@ export class AmazonSPApiService {
     return this.amazonSPApiCall(`/feeds/${this.feedVersion}/feeds`, 'POST', {}, createFeedSpecification, null, store);
   }
 
-  async cancelFeed(store: StoreType, feedId: string): Promise<AmazonSPApiError[]|void> {
+  async cancelFeed(store: StoreType, feedId: string): Promise<AmazonSPApiError[] | void> {
     return this.amazonSPApiCall(`/feeds/${this.feedVersion}/feeds/${feedId}`, 'DELETE', {}, null, null, store);
   }
 
-  async createFeedDocument(store: StoreType, contentType: AmazonSPFeedDocumentContentTypes): Promise<AmazonSPApiCreateFeedDocumentResponse> {
+  async createFeedDocument(
+    store: StoreType,
+    contentType: AmazonSPFeedDocumentContentTypes,
+  ): Promise<AmazonSPApiCreateFeedDocumentResponse> {
     const createFeedDocumentSpecification: AmazonSPApiCreateFeedDocumentSpecification = {
-      contentType: this.getContentType(contentType)
-    }; 
+      contentType: this.getContentType(contentType),
+    };
 
-    return this.amazonSPApiCall(`/feeds/${this.feedVersion}/documents`, 'POST', {}, createFeedDocumentSpecification, null, store);
+    return this.amazonSPApiCall(
+      `/feeds/${this.feedVersion}/documents`,
+      'POST',
+      {},
+      createFeedDocumentSpecification,
+      null,
+      store,
+    );
   }
 
   async getFeedDocument(store: StoreType, feedDocumentId: string): Promise<AmazonSPApiGetFeedDocumentResponse> {
     return this.amazonSPApiCall(`/feeds/${this.feedVersion}/documents/${feedDocumentId}`, 'GET', {}, null, null, store);
   }
 
-  async updateListingsItemQuantity(store: StoreType, listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[]): Promise<AmazonSPApiCreateFeedResponse|string> {
+  async updateListingsItemQuantity(
+    store: StoreType,
+    listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[],
+  ): Promise<AmazonSPApiCreateFeedResponse | string> {
     const amazonSPApiListingsFeed: AmazonSPApiListingsFeed = {
       header: {
         sellerId: store === StoreType.HAB ? this.amazonSPApiConfig.habSellerId : this.amazonSPApiConfig.maSellerId,
         version: '2.0',
         issueLocale: 'en_US',
       },
-      messages: this.createListingsFeedMessages(listingsItemQuantityRequests)
+      messages: this.createListingsFeedMessages(listingsItemQuantityRequests),
     };
 
-    const { payload: { feedDocumentId, encryptionDetails, url }}: AmazonSPApiCreateFeedDocumentResponse = await this.createFeedDocument(store, AmazonSPFeedDocumentContentTypes.JSON);
-    const uploadResponse: string = await this.uploadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, JSON.stringify(amazonSPApiListingsFeed), AmazonSPFeedDocumentContentTypes.JSON);
+    const {
+      payload: { feedDocumentId, encryptionDetails, url },
+    }: AmazonSPApiCreateFeedDocumentResponse = await this.createFeedDocument(
+      store,
+      AmazonSPFeedDocumentContentTypes.JSON,
+    );
+    const uploadResponse: string = await this.uploadFeedDocument(
+      encryptionDetails.key,
+      encryptionDetails.initializationVector,
+      url,
+      JSON.stringify(amazonSPApiListingsFeed),
+      AmazonSPFeedDocumentContentTypes.JSON,
+    );
     if (uploadResponse.length > 0) {
       return uploadResponse;
     }
-    return this.createFeed(store, { feedType: AmazonSPFeedTypes.JSON_LISTINGS_FEED, inputFeedDocumentId: feedDocumentId });
+    return this.createFeed(store, {
+      feedType: AmazonSPFeedTypes.JSON_LISTINGS_FEED,
+      inputFeedDocumentId: feedDocumentId,
+    });
   }
 
-  private createListingsFeedMessages(listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[]): AmazonSPApiListingsFeedMessage[] {
-    return listingsItemQuantityRequests.map((request: AmazonSPApiUpdateListingsItemQuantityRequest, index: number): AmazonSPApiListingsFeedMessage => ({
-      messageId: index + 1,
-      sku: request.sku,
-      operationType: AmazonSPListingsFeedOperationTypes.PATCH,
-      productType: 'PRODUCT',
-      patches: [
-        {
-          op: AmazonSPPatchOperations.REPLACE,
-          path: '/attributes/fulfillment_availability',
-          value: [
-            {
-              fulfillment_channel_code: 'DEFAULT',
-              quantity: request.quantity
-            }
-          ]
-        }
-      ]
-    }));
-  };
+  private createListingsFeedMessages(
+    listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[],
+  ): AmazonSPApiListingsFeedMessage[] {
+    return listingsItemQuantityRequests.map(
+      (request: AmazonSPApiUpdateListingsItemQuantityRequest, index: number): AmazonSPApiListingsFeedMessage => ({
+        messageId: index + 1,
+        sku: request.sku,
+        operationType: AmazonSPListingsFeedOperationTypes.PATCH,
+        productType: 'PRODUCT',
+        patches: [
+          {
+            op: AmazonSPPatchOperations.REPLACE,
+            path: '/attributes/fulfillment_availability',
+            value: [
+              {
+                fulfillment_channel_code: 'DEFAULT',
+                quantity: request.quantity,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+  }
 
-  async updateOrderFulfillmentTracking(store: StoreType, orderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]): Promise<AmazonSPApiCreateFeedResponse|string> {
+  async updateOrderFulfillmentTracking(
+    store: StoreType,
+    orderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[],
+  ): Promise<AmazonSPApiCreateFeedResponse | string> {
     const orderFulfillmentFeed: string = this.createPostOrderFulfillmentFeedMessage(store, orderFulfillmentRequests);
 
-    const { payload: { feedDocumentId, encryptionDetails, url }}: AmazonSPApiCreateFeedDocumentResponse = await this.createFeedDocument(store, AmazonSPFeedDocumentContentTypes.XML);;
-    const uploadResponse: string = await this.uploadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, orderFulfillmentFeed, AmazonSPFeedDocumentContentTypes.XML);
+    const {
+      payload: { feedDocumentId, encryptionDetails, url },
+    }: AmazonSPApiCreateFeedDocumentResponse = await this.createFeedDocument(
+      store,
+      AmazonSPFeedDocumentContentTypes.XML,
+    );
+    const uploadResponse: string = await this.uploadFeedDocument(
+      encryptionDetails.key,
+      encryptionDetails.initializationVector,
+      url,
+      orderFulfillmentFeed,
+      AmazonSPFeedDocumentContentTypes.XML,
+    );
     if (uploadResponse.length > 0) {
       return uploadResponse;
     }
 
-    return this.createFeed(store, { feedType: AmazonSPFeedTypes.POST_ORDER_FULFILLMENT_DATA, inputFeedDocumentId: feedDocumentId });
+    return this.createFeed(store, {
+      feedType: AmazonSPFeedTypes.POST_ORDER_FULFILLMENT_DATA,
+      inputFeedDocumentId: feedDocumentId,
+    });
   }
 
-  private createPostOrderFulfillmentFeedMessage(store: StoreType, orderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]): string {
+  private createPostOrderFulfillmentFeedMessage(
+    store: StoreType,
+    orderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[],
+  ): string {
     const doc: XMLBuilder = create(
       { version: '1.0', encoding: 'UTF-8' },
       {
@@ -282,20 +340,26 @@ export class AmazonSPApiService {
           '@xsi:noNamespaceSchemaLocation': 'amzn-envelope.xsd',
           Header: {
             DocumentVersion: '1.02',
-            MerchantIdentifier: store === StoreType.HAB ? this.amazonSPApiConfig.habSellerId : this.amazonSPApiConfig.maSellerId
+            MerchantIdentifier:
+              store === StoreType.HAB ? this.amazonSPApiConfig.habSellerId : this.amazonSPApiConfig.maSellerId,
           },
           MessageType: 'OrderFulfillment',
-          Message: orderFulfillmentRequests.map((orderFulfillmentRequest: AmazonSPApiUpdateOrderFulfillmentRequest, i: number): any => ({
-            MessageID: i + 1, ...this.convertOrderFulfillmentMessage(orderFulfillmentRequest, 1)
-          }))
-        }
-      }
+          Message: orderFulfillmentRequests.map(
+            (orderFulfillmentRequest: AmazonSPApiUpdateOrderFulfillmentRequest, i: number): any => ({
+              MessageID: i + 1,
+              ...this.convertOrderFulfillmentMessage(orderFulfillmentRequest),
+            }),
+          ),
+        },
+      },
     );
 
     return doc.end({ prettyPrint: true });
   }
 
-  private convertOrderFulfillmentMessage(orderFulfillmentRequest: AmazonSPApiUpdateOrderFulfillmentRequest, messageId: number): AmazonSPApiOrderFulfillmentFeedMessage {
+  private convertOrderFulfillmentMessage(
+    orderFulfillmentRequest: AmazonSPApiUpdateOrderFulfillmentRequest,
+  ): AmazonSPApiOrderFulfillmentFeedMessage {
     return {
       OrderFulfillment: {
         AmazonOrderID: orderFulfillmentRequest.amazonOrderId,
@@ -304,19 +368,25 @@ export class AmazonSPApiService {
           CarrierCode: orderFulfillmentRequest.carrierCode,
           CarrierName: orderFulfillmentRequest.carrierCode,
           ShippingMethod: orderFulfillmentRequest.shippingMethod,
-          ShipperTrackingNumber: orderFulfillmentRequest.shipperTrackingNumber
-        }
-      }
+          ShipperTrackingNumber: orderFulfillmentRequest.shipperTrackingNumber,
+        },
+      },
     };
   }
 
-  private async uploadFeedDocument(key: string, iv: string, url: string, feedDocument: string, contentType: AmazonSPFeedDocumentContentTypes): Promise<any> {
+  private async uploadFeedDocument(
+    key: string,
+    iv: string,
+    url: string,
+    feedDocument: string,
+    contentType: AmazonSPFeedDocumentContentTypes,
+  ): Promise<any> {
     const cipher: Cipher = createCipheriv('aes-256-cbc', Buffer.from(key, 'base64'), Buffer.from(iv, 'base64'));
     const content = Buffer.from(feedDocument);
     const encryptedBuffer = Buffer.concat([cipher.update(content), cipher.final()]);
 
     try {
-      const response =  await axios({
+      const response = await axios({
         method: 'PUT',
         url: url,
         headers: {
@@ -334,11 +404,13 @@ export class AmazonSPApiService {
     }
   }
 
-  private async uploadFeedDocumentWithoutEncript(url: string, feedDocument: string, contentType: AmazonSPFeedDocumentContentTypes): Promise<any> {
-    const content = Buffer.from(feedDocument);
-
+  private async uploadFeedDocumentWithoutEncript(
+    url: string,
+    feedDocument: string,
+    contentType: AmazonSPFeedDocumentContentTypes,
+  ): Promise<any> {
     try {
-      const response =  await axios({
+      const response = await axios({
         method: 'PUT',
         url: url,
         headers: {
@@ -360,8 +432,8 @@ export class AmazonSPApiService {
     const contentTypes = {
       TSV: 'text/tab-separated-values; charset=utf-8',
       XML: 'text/xml; charset=utf-8',
-      JSON: 'application/json'
-    }
+      JSON: 'application/json',
+    };
 
     return contentTypes[contentType?.toUpperCase() ?? 'JSON'];
   }
@@ -376,18 +448,33 @@ export class AmazonSPApiService {
       return getFeedResponse.payload;
     }
 
-    const getFeedDocumentResponse: AmazonSPApiGetFeedDocumentResponse = await this.getFeedDocument(store, getFeedResponse.payload.resultFeedDocumentId);
+    const getFeedDocumentResponse: AmazonSPApiGetFeedDocumentResponse = await this.getFeedDocument(
+      store,
+      getFeedResponse.payload.resultFeedDocumentId,
+    );
     if (getFeedDocumentResponse.errors) {
       return getFeedDocumentResponse.errors;
     }
 
     const { compressionAlgorithm, encryptionDetails, url }: AmazonSPApiFeedDocument = getFeedDocumentResponse.payload;
-    const feedDocumentStr = await this.downloadFeedDocument(encryptionDetails.key, encryptionDetails.initializationVector, url, compressionAlgorithm);
+    const feedDocumentStr = await this.downloadFeedDocument(
+      encryptionDetails.key,
+      encryptionDetails.initializationVector,
+      url,
+      compressionAlgorithm,
+    );
 
-    return getFeedResponse.payload.feedType === AmazonSPFeedTypes.JSON_LISTINGS_FEED ? JSON.parse(feedDocumentStr) : feedDocumentStr;
+    return getFeedResponse.payload.feedType === AmazonSPFeedTypes.JSON_LISTINGS_FEED
+      ? JSON.parse(feedDocumentStr)
+      : feedDocumentStr;
   }
 
-  private async downloadFeedDocument(key: string, iv: string, url: string, compression?: AmazonSPFeedDocumentCompressionAlgorithm): Promise<string> {
+  private async downloadFeedDocument(
+    key: string,
+    iv: string,
+    url: string,
+    compression?: AmazonSPFeedDocumentCompressionAlgorithm,
+  ): Promise<string> {
     try {
       const res = await axios({
         method: 'GET',
@@ -433,9 +520,19 @@ export class AmazonSPApiService {
   async getDefinitionsProductType(store: StoreType, productType: string): Promise<any> {
     const queryParam = new Map<string, string>();
     queryParam.set('marketplaceIds', this.marketPlaceId);
-    queryParam.set('sellerId', store === StoreType.HAB ? this.amazonSPApiConfig.habSellerId : this.amazonSPApiConfig.maSellerId);
+    queryParam.set(
+      'sellerId',
+      store === StoreType.HAB ? this.amazonSPApiConfig.habSellerId : this.amazonSPApiConfig.maSellerId,
+    );
 
-    return this.amazonSPApiCall(`/definitions/2020-09-01/productTypes/${productType}`, 'GET', {}, null, queryParam, store);
+    return this.amazonSPApiCall(
+      `/definitions/2020-09-01/productTypes/${productType}`,
+      'GET',
+      {},
+      null,
+      queryParam,
+      store,
+    );
   }
 
   private getSignatureKey(key: string, dateStamp: string, regionName: string, serviceName: string): lib.WordArray {
@@ -450,24 +547,16 @@ export class AmazonSPApiService {
     const awsRegion = this.awsIamConfig.awsRegion;
     const terminationString = this.awsTermination;
 
-    return [
-      dateStamp,
-      awsRegion,
-      service,
-      terminationString
-    ].join('/');
+    return [dateStamp, awsRegion, service, terminationString].join('/');
   }
 
   private getCredentialString(accessKey: string, dateStamp: string, service: string): string {
-    return [
-      accessKey,
-      this.getCredentialScope(dateStamp, service)
-    ].join('/');
+    return [accessKey, this.getCredentialScope(dateStamp, service)].join('/');
   }
 
   private signedHeaders(): string[] {
     // return [ 'host', 'user-agent', 'x-amz-access-token', 'x-amz-date' ];
-    return [ 'host', 'x-amz-access-token', 'x-amz-date' ];
+    return ['host', 'x-amz-access-token', 'x-amz-date'];
   }
 
   private getUserAgent(): string {
@@ -484,12 +573,20 @@ export class AmazonSPApiService {
   }
 
   private getCanonicalHeaderString(canonicalHeader: CanonicalHeader): string {
-    return this.signedHeaders()
-      .map((signedHeader: string): string => `${signedHeader}:${canonicalHeader[signedHeader]}`)
-      .join('\n') + '\n';
+    return (
+      this.signedHeaders()
+        .map((signedHeader: string): string => `${signedHeader}:${canonicalHeader[signedHeader]}`)
+        .join('\n') + '\n'
+    );
   }
 
-  private getCanonicalRequest(method: string, canonicalUri: string, query: string, canonicalHeaders: CanonicalHeader, payload: any): string {
+  private getCanonicalRequest(
+    method: string,
+    canonicalUri: string,
+    query: string,
+    canonicalHeaders: CanonicalHeader,
+    payload: any,
+  ): string {
     const payloadString: string = payload ? JSON.stringify(payload) : '';
 
     const canonicalRequests: string[] = [
@@ -498,7 +595,7 @@ export class AmazonSPApiService {
       query ?? '',
       this.getCanonicalHeaderString(canonicalHeaders),
       this.signedHeaders().join(';'),
-      SHA256(payloadString).toString()
+      SHA256(payloadString).toString(),
     ];
 
     return canonicalRequests.join('\n');
@@ -512,44 +609,63 @@ export class AmazonSPApiService {
     return {
       host: this.awsIamConfig.stsUrl,
       ['x-amz-content-sha256']: SHA256(query).toString(enc.Hex),
-      ['x-amz-date']: amzDate
+      ['x-amz-date']: amzDate,
     };
   }
 
-  private getRoleCredentialsCanonicalHeaderString(roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader): string {
-    return this.roleCredentialsSignedHeaders()
-      .map((signedHeader: string): string => `${signedHeader}:${roleCredentialsCanonicalHeader[signedHeader]}`)
-      .join('\n') + '\n';
+  private getRoleCredentialsCanonicalHeaderString(
+    roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader,
+  ): string {
+    return (
+      this.roleCredentialsSignedHeaders()
+        .map((signedHeader: string): string => `${signedHeader}:${roleCredentialsCanonicalHeader[signedHeader]}`)
+        .join('\n') + '\n'
+    );
   }
 
-  private getRoleCredentialsCanonicalRequest(query: string, roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader): string {
+  private getRoleCredentialsCanonicalRequest(
+    query: string,
+    roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader,
+  ): string {
     return [
       'POST',
       '/',
       '',
       this.getRoleCredentialsCanonicalHeaderString(roleCredentialsCanonicalHeader),
       this.roleCredentialsSignedHeaders().join(';'),
-      SHA256(query).toString()
+      SHA256(query).toString(),
     ].join('\n');
   }
 
-  private getAuthorizationString(accessKey: string, signature: string, dateStamp: string, service: string, signedHeaders: string[]): string {
-    return `${this.algorithm} Credential=${this.getCredentialString(accessKey, dateStamp, service)}, SignedHeaders=${signedHeaders.join(';')}, Signature=${signature}`;
+  private getAuthorizationString(
+    accessKey: string,
+    signature: string,
+    dateStamp: string,
+    service: string,
+    signedHeaders: string[],
+  ): string {
+    return `${this.algorithm} Credential=${this.getCredentialString(
+      accessKey,
+      dateStamp,
+      service,
+    )}, SignedHeaders=${signedHeaders.join(';')}, Signature=${signature}`;
   }
 
   private getCanonicalStringForSign(canonicalRequest: string, requestDate: string, service: string): string {
     const dateStamp = requestDate.substring(0, 8);
     const hashedCanonicalRequest = SHA256(canonicalRequest).toString();
 
-    return [
-      this.algorithm,
-      requestDate,
-      this.getCredentialScope(dateStamp, service),
-      hashedCanonicalRequest
-    ].join('\n');
+    return [this.algorithm, requestDate, this.getCredentialScope(dateStamp, service), hashedCanonicalRequest].join(
+      '\n',
+    );
   }
 
-  private signCanonicalRequest(secretAccessKey: string, canonicalRequest: string, requestDate: string, service: string): string {
+  private signCanonicalRequest(
+    secretAccessKey: string,
+    canonicalRequest: string,
+    requestDate: string,
+    service: string,
+  ): string {
     const dateStamp = requestDate.substring(0, 8);
     const message = this.getCanonicalStringForSign(canonicalRequest, requestDate, service);
     const key = this.getSignatureKey(secretAccessKey, dateStamp, this.awsIamConfig.awsRegion, service);
@@ -563,16 +679,16 @@ export class AmazonSPApiService {
    * Get new refesh token by following below link when the token is expired
    * https://developer.ebay.com/api-docs/static/oauth-authorization-code-grant.html
    */
-   private async authorize(store: StoreType): Promise<AmazonSPApiAccessTokenType> {
-    
+  private async authorize(store: StoreType): Promise<AmazonSPApiAccessTokenType> {
     if (store === StoreType.HAB && this.habToken && new Date(Date.now()) < this.habToken.expires) {
       return this.habToken;
     } else if (this.maCroixToken && new Date(Date.now()) < this.maCroixToken.expires) {
       return this.maCroixToken;
     }
 
-    const clientToken: AmazonSPApiClientTokenType = store === StoreType.HAB ? this.amazonSPApiConfig.habClientToken : this.amazonSPApiConfig.maCroixClientToken;
-    
+    const clientToken: AmazonSPApiClientTokenType =
+      store === StoreType.HAB ? this.amazonSPApiConfig.habClientToken : this.amazonSPApiConfig.maCroixClientToken;
+
     const formBody = [];
     formBody.push(`${encodeURIComponent('grant_type')}=${encodeURIComponent('refresh_token')}`);
     formBody.push(`${encodeURIComponent('refresh_token')}=${encodeURIComponent(clientToken.refreshToken)}`);
@@ -585,22 +701,22 @@ export class AmazonSPApiService {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       data: formBody.join('&'),
     });
-  
+
     if (Math.floor(res.status / 10) !== 20) {
       throw new Error(res.statusText);
     }
 
     const amzaonSPApiToken: AmazonSPApiAccessTokenType = {
       ...res.data,
-      expires: new Date(Date.now() + ((res.data.expires_in - 5) * 1000))
-    }
+      expires: new Date(Date.now() + (res.data.expires_in - 5) * 1000),
+    };
 
     if (store === StoreType.HAB) {
       this.habToken = amzaonSPApiToken;
     } else {
       this.maCroixToken = amzaonSPApiToken;
     }
-    
+
     return amzaonSPApiToken;
   }
 
@@ -620,36 +736,55 @@ export class AmazonSPApiService {
     const service: string = this.stsService;
 
     const query: string = getQueryString(this.roleCredentialsRequestQuery());
-    const roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader = this.getRoleCredentialsCanonicalHeader(query, requestDate);
-    const roleCredentialsCanonicalRequest: string = this.getRoleCredentialsCanonicalRequest(query, roleCredentialsCanonicalHeader);
-    const signature: string = this.signCanonicalRequest(this.awsIamConfig.secretAccessKey, roleCredentialsCanonicalRequest, requestDate, service);
+    const roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader = this.getRoleCredentialsCanonicalHeader(
+      query,
+      requestDate,
+    );
+    const roleCredentialsCanonicalRequest: string = this.getRoleCredentialsCanonicalRequest(
+      query,
+      roleCredentialsCanonicalHeader,
+    );
+    const signature: string = this.signCanonicalRequest(
+      this.awsIamConfig.secretAccessKey,
+      roleCredentialsCanonicalRequest,
+      requestDate,
+      service,
+    );
 
     try {
       const res = await axios({
         method: 'POST',
         url: `https://${this.awsIamConfig.stsUrl}`,
         headers: {
-          'Authorization': this.getAuthorizationString(this.awsIamConfig.accessKey, signature, requestDate.substring(0, 8), service, this.roleCredentialsSignedHeaders()),
+          Authorization: this.getAuthorizationString(
+            this.awsIamConfig.accessKey,
+            signature,
+            requestDate.substring(0, 8),
+            service,
+            this.roleCredentialsSignedHeaders(),
+          ),
           'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
-          ...roleCredentialsCanonicalHeader
+          ...roleCredentialsCanonicalHeader,
         },
         data: query,
         validateStatus: (status: number): boolean => status >= 200 && status < 501,
       });
 
       return res.data;
-    } catch(error) {
+    } catch (error) {
       this.logger.error('signRoleCredentialRequest error');
       this.logger.error(error);
     }
   }
 
-  private async getArnAssumeRole(store: StoreType): Promise<AssumeRoleType> {
+  private async getArnAssumeRole(): Promise<AssumeRoleType> {
     if (this.arnAssumeRole && new Date(Date.now()) < this.arnAssumeRole.Credentials.ExpiredIn) {
       return this.arnAssumeRole;
     }
 
-    const { AssumeRoleResponse: { AssumeRoleResult: assumeRole }}: { AssumeRoleResponse : { AssumeRoleResult: AssumeRoleType }}  = await this.signRoleCredentials();
+    const {
+      AssumeRoleResponse: { AssumeRoleResult: assumeRole },
+    }: { AssumeRoleResponse: { AssumeRoleResult: AssumeRoleType } } = await this.signRoleCredentials();
 
     this.arnAssumeRole = assumeRole;
     this.arnAssumeRole.Credentials.ExpiredIn = new Date((this.arnAssumeRole.Credentials.Expiration - 5) * 1000);
@@ -657,24 +792,42 @@ export class AmazonSPApiService {
     return this.arnAssumeRole;
   }
 
-  private async amazonSPApiCall(url: string, method: Method, headers: any, data: any, queryParams: Map<string, string>, store: StoreType): Promise<any> {
+  private async amazonSPApiCall(
+    url: string,
+    method: Method,
+    headers: any,
+    data: any,
+    queryParams: Map<string, string>,
+    store: StoreType,
+  ): Promise<any> {
     const { access_token: accessToken } = await this.authorize(store);
-    const { Credentials: credentials } = await this.getArnAssumeRole(store);
-    
+    const { Credentials: credentials } = await this.getArnAssumeRole();
+
     const requestDate: string = toAmazonDateFormat(getCurrentDate());
     const service: string = this.apiService;
 
     const canonicalHeader: CanonicalHeader = this.getCanonicalHeader(accessToken, requestDate);
-    const queryString: string = (queryParams && queryParams.size > 0 ? getQueryString(queryParams) : undefined);
+    const queryString: string = queryParams && queryParams.size > 0 ? getQueryString(queryParams) : undefined;
     const canonicalRequest: string = this.getCanonicalRequest(method, url, queryString, canonicalHeader, data);
-    const signature: string = this.signCanonicalRequest(credentials.SecretAccessKey, canonicalRequest, requestDate, service);
-    
+    const signature: string = this.signCanonicalRequest(
+      credentials.SecretAccessKey,
+      canonicalRequest,
+      requestDate,
+      service,
+    );
+
     try {
       const res = await axios({
         method,
         url: `https://${this.amazonSPApiConfig.baseUrl}${url}${queryString ? `?${queryString}` : ''}`,
         headers: {
-          'Authorization': this.getAuthorizationString(credentials.AccessKeyId, signature, requestDate.substring(0, 8), service, this.signedHeaders()),
+          Authorization: this.getAuthorizationString(
+            credentials.AccessKeyId,
+            signature,
+            requestDate.substring(0, 8),
+            service,
+            this.signedHeaders(),
+          ),
           'Content-Type': 'application/json; charset=utf-8',
           'x-amz-security-token': credentials.SessionToken,
           ...canonicalHeader,
@@ -688,57 +841,56 @@ export class AmazonSPApiService {
     } catch (error) {
       this.logger.error('amazonSPApiCall error');
       this.logger.error(error);
-      
+
       throw error;
     }
   }
 }
 
 interface AmazonSPApiClientTokenType {
-  refreshToken: string,
-  clientId: string,
-  clientSecret: string
+  refreshToken: string;
+  clientId: string;
+  clientSecret: string;
 }
 
 interface AmazonSPApiConfig {
-  authUrl: string,
-  baseUrl: string,
-  habClientToken: AmazonSPApiClientTokenType,
-  maCroixClientToken: AmazonSPApiClientTokenType,
-  habSellerId: string,
-  maSellerId: string,
+  authUrl: string;
+  baseUrl: string;
+  habClientToken: AmazonSPApiClientTokenType;
+  maCroixClientToken: AmazonSPApiClientTokenType;
+  habSellerId: string;
+  maSellerId: string;
 }
 
 interface AmazonSPApiAccessTokenType {
-  access_token: string,
-  refresh_token: string,
-  token_type: string,
-  expires_in: number,
-  expires: Date,
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+  expires: Date;
 }
 
 interface AwsIamConfig {
-  userName: string,
-  accessKey: string,
-  secretAccessKey: string,
-  roleArn: string,
-  LoginLink: string,
-  awsRegion: string,
-  stsUrl: string,
-
+  userName: string;
+  accessKey: string;
+  secretAccessKey: string;
+  roleArn: string;
+  LoginLink: string;
+  awsRegion: string;
+  stsUrl: string;
 }
 
 interface CanonicalHeader {
-  host: string,
+  host: string;
   // ['user-agent']: string,
-  ['x-amz-access-token']: string,
-  ['x-amz-date']: string,
+  ['x-amz-access-token']: string;
+  ['x-amz-date']: string;
 }
 
 interface RoleCredentialsCanonicalHeader {
   host: string;
   ['x-amz-content-sha256']: string;
-  ['x-amz-date']: string,
+  ['x-amz-date']: string;
 }
 
 interface AssumRoleCredentials {
@@ -747,7 +899,7 @@ interface AssumRoleCredentials {
   SecretAccessKey: string;
   SessionToken: string;
   ExpiredIn: Date;
-};
+}
 
 interface AssumeedRoleUser {
   Arn: string;

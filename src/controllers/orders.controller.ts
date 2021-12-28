@@ -12,27 +12,60 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
-  findAll(@Query('includeOrderItems') includeOrderItems?: string, @Query('marketId') marketId?: string, @Query('orderDateStart') orderDateStart?: string, @Query('orderDateEnd') orderDateEnd?: string): Promise<Orders[]> {
-    return this.ordersService.findAll(includeOrderItems?.toLowerCase() === 'true', marketId && Number(marketId), orderDateStart, orderDateEnd);
+  findAll(
+    @Query('includeOrderItems') includeOrderItems?: string,
+    @Query('marketId') marketId?: string,
+    @Query('orderDateStart') orderDateStart?: string,
+    @Query('orderDateEnd') orderDateEnd?: string,
+  ): Promise<Orders[]> {
+    return this.ordersService.findAll(
+      includeOrderItems?.toLowerCase() === 'true',
+      marketId && Number(marketId),
+      orderDateStart,
+      orderDateEnd,
+    );
   }
 
   @Get('un-processed')
-  findUnProcessed(@Query('orderDateStart') orderDateStart: string, @Query('orderDateEnd') orderDateEnd: string, @Query('includeOrderItems') includeOrderItems: string): Promise<Orders[]> {
-    return this.ordersService.findUnProcessed(orderDateStart, orderDateEnd, includeOrderItems?.toLowerCase() === 'true');
+  findUnProcessed(
+    @Query('orderDateStart') orderDateStart: string,
+    @Query('orderDateEnd') orderDateEnd: string,
+    @Query('includeOrderItems') includeOrderItems: string,
+  ): Promise<Orders[]> {
+    return this.ordersService.findUnProcessed(
+      orderDateStart,
+      orderDateEnd,
+      includeOrderItems?.toLowerCase() === 'true',
+    );
   }
 
   @Get('last-modified-date')
-  findByLastModifiedDate(@Query('orderDateStart') orderDateStart: string, @Query('orderDateEnd') orderDateEnd: string, @Query('includeOrderItems') includeOrderItems: string): Promise<Orders[]> {
-    return this.ordersService.findByLastModifiedDate(orderDateStart, orderDateEnd, includeOrderItems?.toLowerCase() === 'true');
+  findByLastModifiedDate(
+    @Query('orderDateStart') orderDateStart: string,
+    @Query('orderDateEnd') orderDateEnd: string,
+    @Query('includeOrderItems') includeOrderItems: string,
+  ): Promise<Orders[]> {
+    return this.ordersService.findByLastModifiedDate(
+      orderDateStart,
+      orderDateEnd,
+      includeOrderItems?.toLowerCase() === 'true',
+    );
   }
 
   @Get('sales-by-sku')
-  salesBySku(@Query('orderDateStart') orderDateStart: string, @Query('orderDateEnd') orderDateEnd: string): Promise<SalesBySkuDto[]> {
+  salesBySku(
+    @Query('orderDateStart') orderDateStart: string,
+    @Query('orderDateEnd') orderDateEnd: string,
+  ): Promise<SalesBySkuDto[]> {
     return this.ordersService.getSalesBySku(orderDateStart, orderDateEnd);
   }
 
   @Get(':ChannelOrderCode/:marketId')
-  findOne(@Param('ChannelOrderCode') ChannelOrderCode: string, @Param('marketId') marketId: string, @Query('includeOrderItems') includeOrderItems: string): Promise<Orders> {
+  findOne(
+    @Param('ChannelOrderCode') ChannelOrderCode: string,
+    @Param('marketId') marketId: string,
+    @Query('includeOrderItems') includeOrderItems: string,
+  ): Promise<Orders> {
     return this.ordersService.findOne(ChannelOrderCode, Number(marketId), includeOrderItems?.toLowerCase() === 'true');
   }
 

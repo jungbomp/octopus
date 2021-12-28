@@ -10,7 +10,7 @@ export class ProductOrder {
   @PrimaryColumn()
   orderSeq: number;
 
-  @ManyToOne(() => Inventory, inventory => inventory.stdSku, {
+  @ManyToOne(() => Inventory, (inventory: Inventory) => inventory.stdSku, {
     primary: true,
     nullable: false,
     onUpdate: 'CASCADE',
@@ -20,7 +20,7 @@ export class ProductOrder {
   @JoinColumn()
   inventory: Inventory;
 
-  @ManyToOne(() => Product, product => product.productCode, {
+  @ManyToOne(() => Product, (product: Product) => product.productCode, {
     nullable: false,
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
@@ -29,7 +29,7 @@ export class ProductOrder {
   @JoinColumn()
   product: Product;
 
-  @ManyToOne(() => Brand, brand => brand.brandCode, {
+  @ManyToOne(() => Brand, (brand: Brand) => brand.brandCode, {
     nullable: true,
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
@@ -38,7 +38,7 @@ export class ProductOrder {
   @JoinColumn()
   brand: Brand;
 
-  @ManyToOne(() => Vendor, vendor => vendor.vendorCode, {
+  @ManyToOne(() => Vendor, (vendor) => vendor.vendorCode, {
     nullable: true,
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
@@ -46,18 +46,18 @@ export class ProductOrder {
   })
   @JoinColumn()
   vendor?: Vendor;
-  
+
   @Column({ type: 'int' })
   orderQty: number;
 
   @Index()
-  @Column({ type: 'char', length: 8})
+  @Column({ type: 'char', length: 8 })
   orderDate: string;
-  
+
   @Column({ type: 'char', length: 6 })
   orderTime: string;
 
-  @ManyToOne(() => User, user => user.employeeId, {
+  @ManyToOne(() => User, (user: User) => user.employeeId, {
     nullable: true,
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',

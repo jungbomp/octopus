@@ -1,13 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateProductDto, } from '../models/dto/createProduct.dto';
+import { CreateProductDto } from '../models/dto/createProduct.dto';
 import { UpdateProductDto } from '../models/dto/updateProduct.dto';
 import { Product } from '../models/product.entity';
 import { BrandsService } from './brands.service';
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
+
   constructor(
     @InjectRepository(Product)
     private readonly productsRepository: Repository<Product>,
@@ -30,7 +32,8 @@ export class ProductsService {
     //   relations: ['manufacturingMaps', 'productMaps']
     // })
 
-    const products = await this.productsRepository.createQueryBuilder('product')
+    const products = await this.productsRepository
+      .createQueryBuilder('product')
       .distinct(true)
       .leftJoinAndSelect('product.manufacturingMaps', 'manufacturingMap')
       .innerJoinAndSelect('product.brand', 'brand')
@@ -38,7 +41,9 @@ export class ProductsService {
       .orderBy('product.productCode')
       .getMany();
 
-    return (brandCode || null) !== null ? products.filter(product => product.brand.brandCode === brandCode) : products;
+    return (brandCode || null) !== null
+      ? products.filter((product) => product.brand.brandCode === brandCode)
+      : products;
   }
 
   findOne(productCode: string, includeManufacturing?: boolean): Promise<Product> {
@@ -50,14 +55,14 @@ export class ProductsService {
       join: {
         alias: 'product',
         leftJoinAndSelect: {
-          manufacturingMap: 'product.manufacturingMaps'
+          manufacturingMap: 'product.manufacturingMaps',
         },
         innerJoin: {
-          productMap: 'product.productMaps'
-        }
+          productMap: 'product.productMaps',
+        },
       },
-      where: { productCode }
-    })
+      where: { productCode },
+    });
   }
 
   async remove(productCode: string): Promise<void> {
@@ -67,7 +72,7 @@ export class ProductsService {
   async update(productCode: string, updateProductDto: UpdateProductDto): Promise<void> {
     const brand = await this.brandsService.findOne(updateProductDto.brandCode);
     const product = UpdateProductDto.toProductEntity(updateProductDto, brand);
-      
+
     await this.productsRepository.update(productCode, product);
   }
 }

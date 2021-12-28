@@ -10,10 +10,9 @@ import { LogiwaService } from './logiwa.service';
 import { MarketsService } from './markets.service';
 import { WalmartApiService } from './walmartApi.service';
 import { AmazonSPApiUpdateListingsItemQuantityRequest } from '../models/amazonSP/amazonSPApiUpdateListingsItemQuantityRequest';
-import { CreateListingDto, } from '../models/dto/createListing.dto';
+import { CreateListingDto } from '../models/dto/createListing.dto';
 import { EbayApiBulkUpdatePriceQuantityDto } from '../models/dto/ebayApiBulkUpdatePriceQuantity.dto';
 import { LogiwaItemChannelListingSearchDto } from '../models/dto/logiwaItemChannelListingSearch.dto';
-import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto';
 import { WalmartApiUpdateInventoryDto } from '../models/dto/wamartApiUpdateInventory.dto';
 import { InterchangeableGroup } from '../models/interchangeableGroup.entity';
 import { InterchangeableGroupMap } from '../models/interchangeableGroupMap.entity';
@@ -46,7 +45,9 @@ export class ListingsService {
 
   async create(createListingDto: CreateListingDto): Promise<Listing> {
     const market = await this.marketsService.findOne(createListingDto.marketId);
-    const inventory = createListingDto.stdSku ? await this.inventoiesService.findOne(createListingDto.stdSku) : undefined;
+    const inventory = createListingDto.stdSku
+      ? await this.inventoiesService.findOne(createListingDto.stdSku)
+      : undefined;
     const listing = CreateListingDto.toListingEntity(createListingDto, market, inventory);
 
     return await this.listingsRepository.save(listing);
@@ -59,8 +60,12 @@ export class ListingsService {
 
       const inventory = new Inventory();
       inventory.stdSku = dto.stdSku;
-    
-      return CreateListingDto.toListingEntity(dto, dto.marketId ? market : undefined, dto.stdSku ? inventory : undefined);
+
+      return CreateListingDto.toListingEntity(
+        dto,
+        dto.marketId ? market : undefined,
+        dto.stdSku ? inventory : undefined,
+      );
     });
 
     return this.listingsRepository.save(listings);
@@ -74,18 +79,18 @@ export class ListingsService {
     const option = {
       listingItemId,
       market: { marketId },
-      listingSku
+      listingSku,
     };
-      
+
     return this.listingsRepository.findOne(option);
   }
 
   async findByInventory(stdSku: string): Promise<Listing[]> {
     const option = {
       inventory: {
-        stdSku
-      }
-    }
+        stdSku,
+      },
+    };
 
     return this.listingsRepository.find(option);
   }
@@ -93,7 +98,7 @@ export class ListingsService {
   async remove(listingItemId: string, marketId: number): Promise<void> {
     const option = {
       listingItemId: listingItemId,
-      market: { marketId }
+      market: { marketId },
     };
 
     await this.listingsRepository.delete(option);
@@ -105,9 +110,14 @@ export class ListingsService {
 
     const channelId = logiwaItemChannelListingSearchDto.channelId;
 
-    const markets: Market[] = await this.marketsService.findAll().then((markets: Market[]): Market[] =>
-      markets.filter((market: Market, i: number): boolean =>
-        markets.findIndex((m: Market): boolean => m.channelId === market.channelId) === i));
+    const markets: Market[] = await this.marketsService
+      .findAll()
+      .then((marketsList: Market[]): Market[] =>
+        marketsList.filter(
+          (market: Market, i: number): boolean =>
+            marketsList.findIndex((m: Market): boolean => m.channelId === market.channelId) === i,
+        ),
+      );
 
     for (let i = 0; i < markets.length; i++) {
       const market: Market = markets[i];
@@ -120,15 +130,17 @@ export class ListingsService {
       logiwaItemChannelListingSearchDto.channelId = market.channelId;
 
       while (true) {
-        const { Data: logiwaListings } = await this.logiwaService.inventoryItemItemChannelIDsSearch(logiwaItemChannelListingSearchDto);
+        const { Data: logiwaListings } = await this.logiwaService.inventoryItemItemChannelIDsSearch(
+          logiwaItemChannelListingSearchDto,
+        );
 
         if ((logiwaListings ?? []).length < 1) {
           break;
         }
 
         const createListings: CreateListingDto[] = [];
-        for (let i = 0; i < logiwaListings.length; i++) {
-          const logiwaListing = logiwaListings[i];
+        for (let j = 0; i < logiwaListings.length; j++) {
+          const logiwaListing = logiwaListings[j];
 
           const stdSku: string = await this.logiwaService.getLogiwaInventoryItemCode(logiwaListing.InventoryItemID);
           const channel: ChannelType = toChannelTypeFromMarketId(market.marketId);
@@ -151,12 +163,14 @@ export class ListingsService {
 
         try {
           const listings = await this.createBatch(createListings);
-          
+
           this.logger.log(
-            `Load ${market.channelName} ${logiwaItemChannelListingSearchDto.selectedPageIndex}/${logiwaListings[0].PageCount} with ${listings.length} item records`
+            `Load ${market.channelName} ${logiwaItemChannelListingSearchDto.selectedPageIndex}/${logiwaListings[0].PageCount} with ${listings.length} item records`,
           );
         } catch (error) {
-          this.logger.log(`Failed to add listing ${market.channelName} ${logiwaItemChannelListingSearchDto.selectedPageIndex}/${logiwaListings[0].PageCount} item records`);
+          this.logger.log(
+            `Failed to add listing ${market.channelName} ${logiwaItemChannelListingSearchDto.selectedPageIndex}/${logiwaListings[0].PageCount} item records`,
+          );
         }
 
         if (logiwaItemChannelListingSearchDto.selectedPageIndex === logiwaListings[0].PageCount) {
@@ -174,7 +188,10 @@ export class ListingsService {
     this.logger.log('Update tracking info to each channel between');
     this.logger.log(`${dateStart} and ${dateEnd}`);
 
-    const orders: Orders[] = await this.ordersService.findByLastModifiedDate(getDttmFromDate(dateStart), getDttmFromDate(dateEnd));
+    const orders: Orders[] = await this.ordersService.findByLastModifiedDate(
+      getDttmFromDate(dateStart),
+      getDttmFromDate(dateEnd),
+    );
 
     return this.updateQuantityToChannelForOrdered(orders);
   }
@@ -183,27 +200,38 @@ export class ListingsService {
     this.logger.log('Update quantity to each channel for order items');
 
     this.logger.log('Retrieve orders for target stdSku list');
-    const inventories: Inventory[] = orders.map(
-      (order: Orders): Inventory[] => order.orderItems.map((orderItem: OrderItem): Inventory => orderItem.inventory)
-    ).flat(1);
+    const inventories: Inventory[] = orders
+      .map((order: Orders): Inventory[] =>
+        order.orderItems.map((orderItem: OrderItem): Inventory => orderItem.inventory),
+      )
+      .flat(1);
 
     const distinctInventories: Inventory[] = inventories.filter(
-      (inventory: Inventory, i: number) => inventories.findIndex((inven: Inventory) => inventory.stdSku === inven.stdSku) === i
+      (inventory: Inventory, i: number) =>
+        inventories.findIndex((inven: Inventory) => inventory.stdSku === inven.stdSku) === i,
     );
 
     this.logger.log('Retrieve all interchangeable groups for ');
-    const interchangeableGroupMaps: InterchangeableGroupMap[] = await this.interchangeableGroupsService.findAllMappings();
+    const interchangeableGroupMaps: InterchangeableGroupMap[] =
+      await this.interchangeableGroupsService.findAllMappings();
     const interchangeableQtyMap: Map<string, InterchangeableGroup> = interchangeableGroupMaps.reduce(
-      (map: Map<string, InterchangeableGroup>, interchangeableGroupMap: InterchangeableGroupMap): Map<string, InterchangeableGroup> =>
+      (
+        map: Map<string, InterchangeableGroup>,
+        interchangeableGroupMap: InterchangeableGroupMap,
+      ): Map<string, InterchangeableGroup> =>
         map.set(interchangeableGroupMap.inventory.stdSku, interchangeableGroupMap.interchangeableGroup),
-        new Map<string, InterchangeableGroup>()
+      new Map<string, InterchangeableGroup>(),
     );
-    
+
     const skuQuantityMap: Map<string, number> = distinctInventories.reduce(
       (map: Map<string, number>, inventory: Inventory): Map<string, number> =>
-        map.set(inventory.stdSku, Math.max(inventory.productQty, interchangeableQtyMap.get(inventory.stdSku)?.quantity ?? 0)),
-      new Map<string, number>());
-      
+        map.set(
+          inventory.stdSku,
+          Math.max(inventory.productQty, interchangeableQtyMap.get(inventory.stdSku)?.quantity ?? 0),
+        ),
+      new Map<string, number>(),
+    );
+
     this.logger.log(`Loaded ${skuQuantityMap.size} ordered stdSku from logiwa`);
 
     await this.updateStdSkuQuantityToEachChannel(skuQuantityMap);
@@ -215,24 +243,36 @@ export class ListingsService {
     this.logger.log('Update all available quantity to each channel');
 
     this.logger.log('Build interchangeable quantity map');
-    const interchangeableGroupMaps: InterchangeableGroupMap[] = await this.interchangeableGroupsService.findAllMappings();
+    const interchangeableGroupMaps: InterchangeableGroupMap[] =
+      await this.interchangeableGroupsService.findAllMappings();
     const interchangeableQtyMap: Map<string, InterchangeableGroup> = interchangeableGroupMaps.reduce(
-      (map: Map<string, InterchangeableGroup>, interchangeableGroupMap: InterchangeableGroupMap): Map<string, InterchangeableGroup> =>
+      (
+        map: Map<string, InterchangeableGroup>,
+        interchangeableGroupMap: InterchangeableGroupMap,
+      ): Map<string, InterchangeableGroup> =>
         map.set(interchangeableGroupMap.inventory.stdSku, interchangeableGroupMap.interchangeableGroup),
-        new Map<string, InterchangeableGroup>()
+      new Map<string, InterchangeableGroup>(),
     );
 
     const availableReportList = await this.logiwaService.getAllAvailableToPromiseReportList();
 
     this.logger.log('Retrieve inventories for availableReports');
-    const inventories: Inventory[] = await Promise.all(availableReportList.map(
-      (availableReport: any): Promise<Inventory> => this.inventoiesService.findOne(availableReport.Code)));
-    
-    const availableStockInfoMap: Map<string, number> = inventories.filter(
-      (inventory: Inventory) => inventory !== undefined).reduce(
-        (acc: Map<string, number>, inventory: Inventory, i: number): Map<string, number> =>
-          acc.set(inventory.stdSku, Math.max(inventory.productQty, interchangeableQtyMap.get(inventory.stdSku)?.quantity ?? 0)),
-          new Map<string, number>());
+    const inventories: Inventory[] = await Promise.all(
+      availableReportList.map(
+        (availableReport: any): Promise<Inventory> => this.inventoiesService.findOne(availableReport.Code),
+      ),
+    );
+
+    const availableStockInfoMap: Map<string, number> = inventories
+      .filter((inventory: Inventory) => inventory !== undefined)
+      .reduce(
+        (acc: Map<string, number>, inventory: Inventory): Map<string, number> =>
+          acc.set(
+            inventory.stdSku,
+            Math.max(inventory.productQty, interchangeableQtyMap.get(inventory.stdSku)?.quantity ?? 0),
+          ),
+        new Map<string, number>(),
+      );
 
     await this.updateStdSkuQuantityToEachChannel(availableStockInfoMap);
 
@@ -249,12 +289,14 @@ export class ListingsService {
 
     const availableStdSkus: string[] = [...availableSkuQuantityMap.keys()];
     this.logger.log('Look up listingd and inventories for each available stdSku');
-    const listingsList: Listing[][] = await Promise.all(availableStdSkus.map(async (stdSku: string): Promise<Listing[]> => await this.findByInventory(stdSku)));
+    const listingsList: Listing[][] = await Promise.all(
+      availableStdSkus.map(async (stdSku: string): Promise<Listing[]> => await this.findByInventory(stdSku)),
+    );
 
     this.logger.log('Create DTO list for requesting each channel and inventory');
     availableStdSkus.forEach((stdSku: string, i: number) => {
       const quantity = availableSkuQuantityMap.get(stdSku);
-    
+
       const listings: Listing[] = listingsList[i];
       listings.forEach((listing: Listing) => {
         const channel: ChannelType = toChannelTypeFromMarketId(listing.market.marketId);
@@ -283,7 +325,7 @@ export class ListingsService {
             } else {
               maEbayApiBulkUpdatePriceQuantityDtos.push({ sku: listing.listingItemId, quantity });
             }
-          
+
           default:
             break;
         }
@@ -291,35 +333,63 @@ export class ListingsService {
     });
 
     if (habAmazonSPApiUpdateListingsItemQuantityRequests.length > 0) {
-      this.logger.log(`Updating ${ChannelType.AMAZON} ${StoreType.HAB} ${habAmazonSPApiUpdateListingsItemQuantityRequests.length} items quantity`);
-      await this.amazonSPApiService.updateListingsItemQuantity(StoreType.HAB, habAmazonSPApiUpdateListingsItemQuantityRequests);
+      this.logger.log(
+        `Updating ${ChannelType.AMAZON} ${StoreType.HAB} ${habAmazonSPApiUpdateListingsItemQuantityRequests.length} items quantity`,
+      );
+      await this.amazonSPApiService.updateListingsItemQuantity(
+        StoreType.HAB,
+        habAmazonSPApiUpdateListingsItemQuantityRequests,
+      );
     }
 
     if (maAmazonSPApiUpdateListingsItemQuantityRequests.length > 0) {
-      this.logger.log(`Updating ${ChannelType.AMAZON} ${StoreType.MA} ${maAmazonSPApiUpdateListingsItemQuantityRequests.length} items quantity`);
-      await this.amazonSPApiService.updateListingsItemQuantity(StoreType.MA, maAmazonSPApiUpdateListingsItemQuantityRequests);
+      this.logger.log(
+        `Updating ${ChannelType.AMAZON} ${StoreType.MA} ${maAmazonSPApiUpdateListingsItemQuantityRequests.length} items quantity`,
+      );
+      await this.amazonSPApiService.updateListingsItemQuantity(
+        StoreType.MA,
+        maAmazonSPApiUpdateListingsItemQuantityRequests,
+      );
     }
 
     if (habWalmartApiUpdateInventories.length > 0) {
-      this.logger.log(`Updating ${ChannelType.WALMART} ${StoreType.HAB} ${habWalmartApiUpdateInventories.length} items quantity`);
+      this.logger.log(
+        `Updating ${ChannelType.WALMART} ${StoreType.HAB} ${habWalmartApiUpdateInventories.length} items quantity`,
+      );
       await this.walmartApiService.bulkItemInventoryUpdate(StoreType.HAB, habWalmartApiUpdateInventories);
     }
 
     if (maWalmartApiUpdateInventories.length > 0) {
-      this.logger.log(`Updating ${ChannelType.WALMART} ${StoreType.MA} ${maWalmartApiUpdateInventories.length} items quantity`);
+      this.logger.log(
+        `Updating ${ChannelType.WALMART} ${StoreType.MA} ${maWalmartApiUpdateInventories.length} items quantity`,
+      );
       await this.walmartApiService.bulkItemInventoryUpdate(StoreType.MA, maWalmartApiUpdateInventories);
     }
 
     if (habEbayApiBulkUpdatePriceQuantityDtos.length > 0) {
-      this.logger.log(`Updating ${habEbayApiBulkUpdatePriceQuantityDtos.length} inventory items into ${ChannelType.EBAY} ${StoreType.HAB}`);
-      const processed: number = await this.ebayApiService.bulkUpdatePriceQuantity(StoreType.HAB, habEbayApiBulkUpdatePriceQuantityDtos);
-      this.logger.log(`Updated ${processed}/${habEbayApiBulkUpdatePriceQuantityDtos.length} inventory items into ebay ${StoreType.HAB}`);
+      this.logger.log(
+        `Updating ${habEbayApiBulkUpdatePriceQuantityDtos.length} inventory items into ${ChannelType.EBAY} ${StoreType.HAB}`,
+      );
+      const processed: number = await this.ebayApiService.bulkUpdatePriceQuantity(
+        StoreType.HAB,
+        habEbayApiBulkUpdatePriceQuantityDtos,
+      );
+      this.logger.log(
+        `Updated ${processed}/${habEbayApiBulkUpdatePriceQuantityDtos.length} inventory items into ebay ${StoreType.HAB}`,
+      );
     }
 
     if (maEbayApiBulkUpdatePriceQuantityDtos.length > 0) {
-      this.logger.log(`Updating ${maEbayApiBulkUpdatePriceQuantityDtos.length} inventory items into ${ChannelType.EBAY} ${StoreType.MA}`);
-      const processed: number = await this.ebayApiService.bulkUpdatePriceQuantity(StoreType.MA, maEbayApiBulkUpdatePriceQuantityDtos);
-      this.logger.log(`Updated ${processed}/${maEbayApiBulkUpdatePriceQuantityDtos.length} inventory items into ebay ${StoreType.MA}`);
+      this.logger.log(
+        `Updating ${maEbayApiBulkUpdatePriceQuantityDtos.length} inventory items into ${ChannelType.EBAY} ${StoreType.MA}`,
+      );
+      const processed: number = await this.ebayApiService.bulkUpdatePriceQuantity(
+        StoreType.MA,
+        maEbayApiBulkUpdatePriceQuantityDtos,
+      );
+      this.logger.log(
+        `Updated ${processed}/${maEbayApiBulkUpdatePriceQuantityDtos.length} inventory items into ebay ${StoreType.MA}`,
+      );
     }
   }
 }

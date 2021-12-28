@@ -9,13 +9,14 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  findAll(@Query('includeManufacturing') includeManufacturing: boolean, @Query('brandCode') brandCode: string): Promise<Product[]> {
-    return this.productsService.findAll(includeManufacturing, brandCode);
+  findAll(@Query('includeManufacturing') includeManufacturing: string, @Query('brandCode') brandCode: string): Promise<Product[]> {
+    console.log('includeManufacturing: ', includeManufacturing);
+    return this.productsService.findAll((/true/i).test(includeManufacturing), brandCode);
   }
 
   @Get(':productCode')
-  findOne(@Param('productCode') productCode: string, @Query('includeManufacturing') includeManufacturing: boolean): Promise<Product> {
-    return this.productsService.findOne(productCode, includeManufacturing);
+  findOne(@Param('productCode') productCode: string, @Query('includeManufacturing') includeManufacturing: string): Promise<Product> {
+    return this.productsService.findOne(productCode, (/true/i).test(includeManufacturing));
   }
 
   @Post()

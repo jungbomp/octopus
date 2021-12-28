@@ -8,7 +8,7 @@ export class Orders {
   @PrimaryColumn({ type: 'char', length: 45 })
   channelOrderCode: string;
 
-  @ManyToOne(() => Market, market => market.marketId, {
+  @ManyToOne(() => Market, (market: Market) => market.marketId, {
     primary: true,
     nullable: false,
     onUpdate: 'CASCADE',
@@ -19,7 +19,7 @@ export class Orders {
   market: Market;
 
   @Index()
-  @Column({ type: 'char', length: 8})
+  @Column({ type: 'char', length: 8 })
   orderDate: string;
 
   @Column({ type: 'int' })
@@ -43,7 +43,7 @@ export class Orders {
   @Column({ type: 'varchar', length: 10, nullable: true })
   zipcode: string;
 
-  @ManyToOne(() => User, user => user.employeeId, {
+  @ManyToOne(() => User, (user) => user.employeeId, {
     nullable: true,
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
@@ -62,6 +62,19 @@ export class Orders {
   @Column({ type: 'char', length: 14, nullable: true })
   lastModifiedDttm: string;
 
-  @OneToMany(() => OrderItem, orderItem => orderItem.order)
+  @OneToMany(() => OrderItem, (orderItem: OrderItem) => orderItem.order)
   orderItems: OrderItem[];
+
+  @ManyToOne(() => Orders, (order: Orders) => order.masterOrder, {
+    nullable: true,
+    onUpdate: 'SET NULL',
+    onDelete: 'SET NULL',
+  })
+  masterOrder: Orders;
+
+  @Column({ type: 'char', length: 14, nullable: true })
+  trackingNumberUpdateDttm?: string;
+
+  @Column({ type: 'char', length: 14, nullable: true })
+  shippingDttm?: string;
 }
