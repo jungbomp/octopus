@@ -15,11 +15,18 @@ import { EbayApiService } from '../services/ebayApi.service';
 import { OrdersService } from '../services/orders.service';
 
 import { OrdersController } from '../controllers/orders.controller';
-import { DateTimeUtil } from '../utils/dateTime.util';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Orders, OrderItem]), AmazonSPApiModule, InventoriesModule, LogiwaApiModule, MarketsModule, UsersModule, WalmartApiModule],
-  providers: [OrdersService, EbayApiService, DateTimeUtil],
+  imports: [
+    TypeOrmModule.forFeature([Orders, OrderItem]),
+    AmazonSPApiModule,
+    InventoriesModule,
+    LogiwaApiModule,
+    MarketsModule,
+    UsersModule,
+    WalmartApiModule,
+  ],
+  providers: [OrdersService, EbayApiService],
   exports: [OrdersService],
   controllers: [OrdersController],
 })

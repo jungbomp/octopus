@@ -10,7 +10,7 @@ import {
   toChannelTypeFromMarketId,
   toStoreTypeFromMarketId,
 } from 'src/utils/types.util';
-import { DateTimeUtil, getCurrentDate, getCurrentDttm, getDttmFromDate } from 'src/utils/dateTime.util';
+import { getCurrentDate, getCurrentDttm, getDttmFromDate, toDateFromDateString } from 'src/utils/dateTime.util';
 
 import { EbayApiService } from './ebayApi.service';
 import { InventoriesService } from './inventories.service';
@@ -52,7 +52,6 @@ export class OrdersService {
     private readonly marketsService: MarketsService,
     private readonly usersService: UsersService,
     private readonly walmartApiService: WalmartApiService,
-    private readonly dateTimeUtil: DateTimeUtil,
   ) {}
 
   async findAll(
@@ -217,7 +216,7 @@ export class OrdersService {
         return CreateOrderItemDto.toOrderItem(orderItemDto, order, inventory);
       }),
     );
-    order.lastModifiedDttm = this.dateTimeUtil.getCurrentDttm();
+    order.lastModifiedDttm = getCurrentDttm();
 
     await this.ordersRepository.save(order);
     await this.orderItemsRepository.save(orderItems);
@@ -472,12 +471,9 @@ export class OrdersService {
     this.logger.log('Update tracking info to each channel between');
     this.logger.log(`${dateStart} and ${dateEnd}`);
 
-    const orders: Orders[] = await this.findByLastModifiedDate(
-      this.dateTimeUtil.getDttmFromDate(dateStart),
-      this.dateTimeUtil.getDttmFromDate(dateEnd),
-    );
+    const orders: Orders[] = await this.findByLastModifiedDate(getDttmFromDate(dateStart), getDttmFromDate(dateEnd));
     const filteredOrders: Orders[] = orders.filter(
-      (order: Orders) => (order.trackingNo || '').length > 0 && (order.procDate || '').length === 0,
+      (order: Orders) => (order.trackingNo || '').length > 0 && (order.trackingNumberUpdateDttm || '').length === 0,
     );
 
     this.logger.log(`Starting to update tracking number to each channel with ${filteredOrders.length} orders`);
@@ -494,7 +490,9 @@ export class OrdersService {
           case ChannelType.AMAZON:
             const updateOrderFulfillmentRequest: AmazonSPApiUpdateOrderFulfillmentRequest = {
               amazonOrderId: order.channelOrderCode,
-              fulfillmentDate: getCurrentDate().toISOString(),
+              fulfillmentDate: order.shippingDttm
+                ? toDateFromDateString(order.shippingDttm).toISOString()
+                : getCurrentDate().toISOString(),
               carrierCode: AmazonSPFulfillmentCarrierCode.USPS,
               shippingMethod: 'USPS - First-Class Mail',
               shipperTrackingNumber: order.trackingNo,

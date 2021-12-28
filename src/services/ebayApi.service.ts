@@ -7,12 +7,13 @@ import { EbayApiBulkUpdatePriceQuantityDto } from 'src/models/dto/ebayApiBulkUpd
 import { EbayApiCreateShippingFulfillmentDto } from 'src/models/dto/ebayApiCreateShippingFulfillment.dto';
 import { EbayApiCreateTaskDto } from 'src/models/dto/ebayApiCreateTask.dto';
 import { EbayApiGetOrdersDto } from 'src/models/dto/ebayApiGetOrders.dto';
+
+import { EbayApiGetResultFileDto } from 'src/models/dto/ebayApiGetResultFile.dto';
 import { EbayApiFileUploadDto } from 'src/models/dto/ebayApiFileUpload.dto';
+import { EbayApiGetTaskDto } from 'src/models/dto/ebayApiGetTask.dto';
+import { EbayApiGetTasksDto } from 'src/models/dto/ebayApiGetTasks.dto';
 import { StoreType } from 'src/types';
 import { toDateFromDateString, toDateFromISOString } from '../utils/dateTime.util';
-import { EbayApiGetTasksDto } from 'src/models/dto/ebayApiGetTasks.dto';
-import { EbayApiGetTaskDto } from 'src/models/dto/ebayApiGetTask.dto';
-import { EbayApiGetResultFileDto } from 'src/models/dto/ebayApiGetResultFile.dto';
 
 @Injectable()
 export class EbayApiService {
