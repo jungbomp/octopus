@@ -16,12 +16,19 @@ export class WalmartApiController {
   }
 
   @Put('inventory')
-  updateInventory(@Param('store') store: StoreType, @Body() walmartApiUpdateInventoryDto: WalmartApiUpdateInventoryDto): Promise<any> {
+  updateInventory(
+    @Param('store') store: StoreType,
+    @Body() walmartApiUpdateInventoryDto: WalmartApiUpdateInventoryDto,
+  ): Promise<any> {
     return this.walmartApiService.updateInventory(store, walmartApiUpdateInventoryDto);
   }
 
   @Get('inventories')
-  getInventories(@Param('store') store: StoreType, @Query('limit') limit?: string, @Query('nextCursor') nextCursor?: string): Promise<any> {
+  getInventories(
+    @Param('store') store: StoreType,
+    @Query('limit') limit?: string,
+    @Query('nextCursor') nextCursor?: string,
+  ): Promise<any> {
     return this.walmartApiService.getInventories(store, limit ? Number(limit) : undefined, nextCursor);
   }
 

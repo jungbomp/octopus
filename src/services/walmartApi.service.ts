@@ -44,7 +44,6 @@ export class WalmartApiService {
   }
 
   async getAllItems(store: StoreType): Promise<any[]> {
-    this.logger.log('getAllItems');
     let items = [];
     let response = { nextCursor: undefined, ItemResponse: [], totalItems: 0 };
     do {
