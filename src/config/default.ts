@@ -25,7 +25,7 @@ export const config = {
     orderFormFolderId: process.env.ORDER_FORM_FOLDER_ID,
   },
   sendGrid: {
-    apiKey: process.env.SEND_GRID_API_KEY
+    apiKey: process.env.SEND_GRID_API_KEY,
   },
   logiwaApiConfig: {
     username: process.env.LOGIWA_API_USERNAME,
@@ -36,7 +36,7 @@ export const config = {
     warehouseId: process.env.LOGIWA_API_WAREHOUSE_ID,
     numberOfApiCallPerSecond: process.env.LOGIWA_API_NUMBER_OF_API_CALL_PER_SECOND,
     jobRetryPeriod: process.env.LOGIWA_API_JOB_RETRY_PERIOD,
-    inventoryItemMapFilename: process.env.LOGIWA_API_INVENTORY_ITEM_MAP_FILENAME
+    inventoryItemMapFilename: process.env.LOGIWA_API_INVENTORY_ITEM_MAP_FILENAME,
   },
   walmartApiConfig: {
     username: process.env.WALMART_API_USERNAME,
@@ -49,7 +49,7 @@ export const config = {
     maCroixClientToken: {
       clientId: process.env.WALMART_API_MA_CLIENT_ID,
       clientSecret: process.env.WALMART_API_MA_CLIENT_SECRET,
-    }
+    },
   },
   ebayApiConfig: {
     baseUrl: process.env.EBAY_API_BASE_URL,
@@ -87,6 +87,12 @@ export const config = {
     consoleLoginLink: process.env.AWS_IAM_CONSOLE_LOGIN_LINK,
     awsRegion: process.env.AWS_REGION,
     stsUrl: process.env.AWS_STS_URL,
+  },
+  searsApiConfig: {
+    userId: process.env.SEARS_API_USERNAME,
+    sellerId: process.env.SEARS_API_SELLER_ID,
+    authorizationKey: process.env.SEARS_API_AUTHORIZATION_KEY,
+    baseUrl: process.env.SEARS_API_BASE_URL,
   },
   foo: 'dev-bar',
 };

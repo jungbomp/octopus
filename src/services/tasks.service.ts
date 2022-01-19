@@ -84,7 +84,7 @@ export class TasksService {
               const [firstOrder] = orders;
 
               const orderDateStart = orders.reduce(
-                (orderDate: string, order: Orders) =>
+                (orderDate: string, order: Orders): string =>
                   orderDate.localeCompare(order.orderDate) < 0 ? orderDate : order.orderDate,
                 firstOrder.orderDate,
               );

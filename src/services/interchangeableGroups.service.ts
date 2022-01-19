@@ -30,7 +30,7 @@ export class InterchangeableGroupsService {
 
   async find(stdSku: string): Promise<InterchangeableGroup> {
     return this.interchangeableGroupsRepository.findOne({
-      inventory: { stdSku }
+      inventory: { stdSku },
     });
   }
 
@@ -40,10 +40,10 @@ export class InterchangeableGroupsService {
       where: {
         interchangeableGroup: {
           inventory: {
-            stdSku: interchangeableGroupStdSku
+            stdSku: interchangeableGroupStdSku,
           },
-        }
-      }
+        },
+      },
     });
   }
 
@@ -53,11 +53,11 @@ export class InterchangeableGroupsService {
       where: {
         interchangeableGroup: {
           inventory: {
-            stdSku: interchangeableGroupStdSku
+            stdSku: interchangeableGroupStdSku,
           },
         },
-        inventory: { stdSku }
-      }
+        inventory: { stdSku },
+      },
     });
   }
 
@@ -66,91 +66,110 @@ export class InterchangeableGroupsService {
       relations: ['interchangeableGroup'],
       where: {
         inventory: {
-          stdSku: stdSku
+          stdSku: stdSku,
         },
-      }
+      },
     });
-
 
     return interchangeableGroupMaps.shift();
   }
 
   async create(createInterchangeableGroupDto: CreateInterchangeableGroupDto): Promise<InterchangeableGroup> {
     const inventory = await this.inventoriesService.findOne(createInterchangeableGroupDto.stdSku);
-    const interchangeableGroup = CreateInterchangeableGroupDto.toInterchangeableGroup(createInterchangeableGroupDto, inventory);
+    const interchangeableGroup = CreateInterchangeableGroupDto.toInterchangeableGroup(
+      createInterchangeableGroupDto,
+      inventory,
+    );
 
     return this.interchangeableGroupsRepository.save(interchangeableGroup);
   }
 
   async createBatch(createInterchangeableGroups: CreateInterchangeableGroupDto[]): Promise<InterchangeableGroup[]> {
-    const interchangeableGroups: InterchangeableGroup[] = createInterchangeableGroups.map((dto: CreateInterchangeableGroupDto): InterchangeableGroup => {
-      const inventory = new Inventory();
-      inventory.stdSku = dto.stdSku;
-      return CreateInterchangeableGroupDto.toInterchangeableGroup(dto, dto.stdSku ? inventory : undefined);
-    });
+    const interchangeableGroups: InterchangeableGroup[] = createInterchangeableGroups.map(
+      (dto: CreateInterchangeableGroupDto): InterchangeableGroup => {
+        const inventory = new Inventory();
+        inventory.stdSku = dto.stdSku;
+        return CreateInterchangeableGroupDto.toInterchangeableGroup(dto, dto.stdSku ? inventory : undefined);
+      },
+    );
 
     return this.interchangeableGroupsRepository.save(interchangeableGroups);
   }
 
-  async createMapping(createInterchangeableGroupMapDto: CreateInterchangeableGroupMapDto): Promise<InterchangeableGroupMap> {
+  async createMapping(
+    createInterchangeableGroupMapDto: CreateInterchangeableGroupMapDto,
+  ): Promise<InterchangeableGroupMap> {
     const interchangeableGroup = await this.find(createInterchangeableGroupMapDto.interchangeableGroupStdSku);
     const inventory = await this.inventoriesService.findOne(createInterchangeableGroupMapDto.stdSku);
-    const interchangeableGroupMap = CreateInterchangeableGroupMapDto.toInterchangeableGroupMap(interchangeableGroup, inventory);
+    const interchangeableGroupMap = CreateInterchangeableGroupMapDto.toInterchangeableGroupMap(
+      interchangeableGroup,
+      inventory,
+    );
 
     return this.interchangeableGroupMapsRepository.save(interchangeableGroupMap);
   }
 
-  async createMappingBatch(createInterchangeableGroupMaps: CreateInterchangeableGroupMapDto[]): Promise<InterchangeableGroupMap[]> {
-    const interchangeableGroupMaps: InterchangeableGroupMap[] = createInterchangeableGroupMaps.map((dto: CreateInterchangeableGroupMapDto): InterchangeableGroupMap => {
-      const interchangeableGroup = new InterchangeableGroup();
-      interchangeableGroup.inventory.stdSku = dto.interchangeableGroupStdSku;
+  async createMappingBatch(
+    createInterchangeableGroupMaps: CreateInterchangeableGroupMapDto[],
+  ): Promise<InterchangeableGroupMap[]> {
+    const interchangeableGroupMaps: InterchangeableGroupMap[] = createInterchangeableGroupMaps.map(
+      (dto: CreateInterchangeableGroupMapDto): InterchangeableGroupMap => {
+        const interchangeableGroup = new InterchangeableGroup();
+        interchangeableGroup.inventory.stdSku = dto.interchangeableGroupStdSku;
 
-      const inventory = new Inventory();
-      inventory.stdSku = dto.stdSku;
-      return CreateInterchangeableGroupMapDto.toInterchangeableGroupMap(interchangeableGroup, inventory);
-    });
+        const inventory = new Inventory();
+        inventory.stdSku = dto.stdSku;
+        return CreateInterchangeableGroupMapDto.toInterchangeableGroupMap(interchangeableGroup, inventory);
+      },
+    );
 
     return this.interchangeableGroupMapsRepository.save(interchangeableGroupMaps);
   }
 
   async remove(stdSku: string): Promise<void> {
     await this.interchangeableGroupsRepository.delete({
-      inventory: { stdSku }
+      inventory: { stdSku },
     });
   }
 
   async removeMappings(interchangeableGroupStdSku: string, stdSku?: string): Promise<void> {
     const option = {
       interchangeableGroup: {
-        inventory: { stdSku: interchangeableGroupStdSku }
-      }
-    }
+        inventory: { stdSku: interchangeableGroupStdSku },
+      },
+    };
 
-    await this.interchangeableGroupMapsRepository.delete(stdSku ? 
-      {
-        ...option,
-        inventory: { stdSku }
-      } : option);
+    await this.interchangeableGroupMapsRepository.delete(
+      stdSku
+        ? {
+            ...option,
+            inventory: { stdSku },
+          }
+        : option,
+    );
   }
 
   async updateInterchangeableQuantities(): Promise<void> {
     this.logger.log('Update InterchangeableGroup');
 
-    const interchangeableGroups = await this.findAll();
+    const interchangeableGroups: InterchangeableGroup[] = await this.findAll();
 
-    const createInterchangeableGroupDtos = await Promise.all(interchangeableGroups.map(
-      async (interchangeableGroup: InterchangeableGroup): Promise<CreateInterchangeableGroupDto> => {
-        const interchangeableGroupMaps = await this.findMappings(interchangeableGroup.inventory.stdSku);
-        
-        const createInterchangeableGroupDto = new CreateInterchangeableGroupDto();
-        createInterchangeableGroupDto.stdSku = interchangeableGroup.inventory.stdSku;
-        createInterchangeableGroupDto.quantity = interchangeableGroupMaps.reduce(
-          (sum: number, interchangeableGroupMap: InterchangeableGroupMap): number => sum + interchangeableGroupMap.inventory.productQty,
-          0
-        );
+    const createInterchangeableGroupDtos = await Promise.all(
+      interchangeableGroups.map(
+        async (interchangeableGroup: InterchangeableGroup): Promise<CreateInterchangeableGroupDto> => {
+          const interchangeableGroupMaps = await this.findMappings(interchangeableGroup.inventory.stdSku);
 
-        return createInterchangeableGroupDto;
-      })
+          const createInterchangeableGroupDto = new CreateInterchangeableGroupDto();
+          createInterchangeableGroupDto.stdSku = interchangeableGroup.inventory.stdSku;
+          createInterchangeableGroupDto.quantity = interchangeableGroupMaps.reduce(
+            (sum: number, interchangeableGroupMap: InterchangeableGroupMap): number =>
+              sum + interchangeableGroupMap.inventory.productQty,
+            0,
+          );
+
+          return createInterchangeableGroupDto;
+        },
+      ),
     );
 
     await this.createBatch(createInterchangeableGroupDtos);

@@ -63,6 +63,10 @@ export const findMarketId = (channel: ChannelType, store: StoreType): number =>
   marketTable.find((market) => market.channel === channel && market.store === store).id ?? -1;
 export const findChannelTypeFromChannelId = (channelId: number): ChannelType =>
   marketTable.find((market) => market.channelId === channelId)?.channel;
+export const findChannelTypeFromStoreName = (storeName: string): ChannelType =>
+  marketTable.find(
+    (market) => market.channel && storeName.toLowerCase().indexOf(String(market.channel).toLowerCase()) > -1,
+  )?.channel;
 export const findStoreType = (storeName: string): StoreType =>
   storeName.toLowerCase().indexOf(StoreType.HAB.toLowerCase()) > -1 || storeName.toLowerCase().indexOf('skyhigh') > -1
     ? StoreType.HAB

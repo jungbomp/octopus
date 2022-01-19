@@ -218,3 +218,14 @@ export const toAmazonDateFormat = (date: Date): string => {
 
   return `${yyyy}${mm}${dd}T${hh}${mi}${ss}Z`;
 };
+
+export const toSearsDateFormat = (date: Date): string => {
+  const yyyy = date.getUTCFullYear();
+  const mm = ('0' + (date.getUTCMonth() + 1)).slice(-2);
+  const dd = ('0' + date.getUTCDate()).slice(-2);
+  const hh = ('0' + date.getUTCHours()).slice(-2);
+  const mi = ('0' + date.getUTCMinutes()).slice(-2);
+  const ss = ('0' + date.getUTCSeconds()).slice(-2);
+
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}Z`;
+};
