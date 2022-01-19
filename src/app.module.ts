@@ -27,6 +27,7 @@ import { EbayApiModule } from './modules/ebayApi.module';
 import { AmazonSPApiModule } from './modules/amazonSPApi.module';
 import { InterchangeableGroupsModule } from './modules/interchangeableGroups.module';
 import { AWSModule } from './modules/aws.module';
+import { SearsApiModule } from './modules/searsApi.module';
 
 @Module({
   imports: [
@@ -133,6 +134,10 @@ import { AWSModule } from './modules/aws.module';
             path: '/',
             module: ProductBundlesModule,
           },
+          {
+            path: '/',
+            module: SearsApiModule,
+          },
         ],
       },
     ]),
@@ -158,6 +163,7 @@ import { AWSModule } from './modules/aws.module';
     AmazonSPApiModule,
     InterchangeableGroupsModule,
     AWSModule,
+    SearsApiModule,
   ],
 })
 export class AppModule {}

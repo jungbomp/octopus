@@ -5,6 +5,7 @@ import { Repository, Between, MoreThanOrEqual, LessThanOrEqual, UpdateResult } f
 import { AmazonSPFulfillmentCarrierCode, ChannelType, MarketType, StoreType } from 'src/types';
 import {
   findChannelTypeFromChannelId,
+  findChannelTypeFromStoreName,
   findMarketId,
   findStoreType,
   toChannelTypeFromMarketId,
@@ -130,6 +131,15 @@ export class OrdersService {
     return orders.filter((order: Orders): boolean => (order.procDate || '').length === 0);
   }
 
+  async findNoTrackingNumberUpdated(
+    orderDateStart?: string,
+    orderDateEnd?: string,
+    includeOrderItems?: boolean,
+  ): Promise<Orders[]> {
+    const orders: Orders[] = await this.findAll(includeOrderItems, undefined, orderDateStart, orderDateEnd);
+    return orders.filter((order: Orders): boolean => (order.trackingNumberUpdateDttm ?? '').length === 0);
+  }
+
   async findByLastModifiedDate(dateStart: string, dateEnd: string, includeOrderItems?: boolean): Promise<Orders[]> {
     const option = {
       lastModifiedDttm: Between(dateStart, dateEnd),
@@ -206,23 +216,11 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto): Promise<Orders> {
-    const market = await this.marketsService.findOne(createOrderDto.marketId);
-
-    const user =
-      (createOrderDto.employeeId || '').length > 0 ? await this.usersService.findOne(createOrderDto.employeeId) : null;
-
-    const masterOrder: Orders =
-      (createOrderDto.masterChannelOrderCode ?? '').length > 0
-        ? await this.findOne(createOrderDto.masterChannelOrderCode, createOrderDto.masterMarketId, false)
-        : null;
-
-    const order = CreateOrderDto.toOrder(createOrderDto, market, user, masterOrder);
-    const orderItems = await Promise.all(
-      createOrderDto.orderItems.map(async (orderItemDto: CreateOrderItemDto) => {
-        const inventory = await this.inventoriesService.findOne(orderItemDto.stdSku);
-        return CreateOrderItemDto.toOrderItem(orderItemDto, order, inventory);
-      }),
+    const order: Orders = this.getOrderFromCreateOrderDto(createOrderDto);
+    const orderItems = createOrderDto.orderItems.map((orderItemDto: CreateOrderItemDto) =>
+      this.getOrderItemFromCreateOrderItemDto(orderItemDto, order),
     );
+
     order.lastModifiedDttm = getCurrentDttm();
 
     await this.ordersRepository.save(order);
@@ -233,38 +231,16 @@ export class OrdersService {
 
   async createBatch(createOrderDtos: CreateOrderDto[]): Promise<number> {
     const orders = createOrderDtos.map((createOrderDto: CreateOrderDto) => {
-      const market = new Market();
-      market.marketId = createOrderDto.marketId;
-
-      const user = new User();
-      user.employeeId = createOrderDto.employeeId;
-
-      const masterOrderMarket = new Market();
-      masterOrderMarket.marketId = createOrderDto.masterMarketId;
-
-      const masterOrder = new Orders();
-      masterOrder.channelOrderCode = createOrderDto.masterChannelOrderCode;
-      masterOrder.market = masterOrderMarket;
-
-      const order = CreateOrderDto.toOrder(
-        createOrderDto,
-        market,
-        (createOrderDto.employeeId ?? '').length > 0 ? user : null,
-        (createOrderDto.masterChannelOrderCode ?? '').length > 0 ? masterOrder : null,
-      );
+      const order = this.getOrderFromCreateOrderDto(createOrderDto);
       order.lastModifiedDttm = getCurrentDttm();
-
       return order;
     });
 
     const orderItems = orders
       .map((order: Orders, i: number) =>
-        createOrderDtos[i].orderItems.map((orderItemDto: CreateOrderItemDto) => {
-          const inventory = new Inventory();
-          inventory.stdSku = orderItemDto.stdSku;
-
-          return CreateOrderItemDto.toOrderItem(orderItemDto, order, inventory);
-        }),
+        createOrderDtos[i].orderItems.map((orderItemDto: CreateOrderItemDto) =>
+          this.getOrderItemFromCreateOrderItemDto(orderItemDto, order),
+        ),
       )
       .reduce((acc, cur) => acc.concat(cur), []);
 
@@ -356,7 +332,10 @@ export class OrdersService {
         logiwaOrders
           .filter((logiwaOrder: any) => (logiwaOrder.ChannelOrderCode || '').length > 0)
           .map(async (logiwaOrder: any): Promise<CreateOrderDto> => {
-            const channel: ChannelType = findChannelTypeFromChannelId(logiwaOrder.ChannelID[0]);
+            const channel: ChannelType =
+              logiwaOrder.ChannelID?.length > 0
+                ? findChannelTypeFromChannelId(logiwaOrder.ChannelID[0])
+                : findChannelTypeFromStoreName(logiwaOrder.StoreName);
             const store: StoreType = findStoreType(logiwaOrder.StoreName);
 
             const orderItems: CreateOrderItemDto[] = await Promise.all(
@@ -705,4 +684,33 @@ export class OrdersService {
     mxEbayQuantity: props.mxEbayQuantity || 0,
     mxWalmartQuantity: props.mxWalmartQuantity || 0,
   });
+
+  private getOrderFromCreateOrderDto(createOrderDto: CreateOrderDto): Orders {
+    const market = new Market();
+    market.marketId = createOrderDto.marketId;
+
+    const user = new User();
+    user.employeeId = createOrderDto.employeeId;
+
+    const masterOrderMarket = new Market();
+    masterOrderMarket.marketId = createOrderDto.masterMarketId;
+
+    const masterOrder = new Orders();
+    masterOrder.channelOrderCode = createOrderDto.masterChannelOrderCode;
+    masterOrder.market = masterOrderMarket;
+
+    return CreateOrderDto.toOrder(
+      createOrderDto,
+      market,
+      (createOrderDto.employeeId ?? '').length > 0 ? user : null,
+      (createOrderDto.masterChannelOrderCode ?? '').length > 0 ? masterOrder : null,
+    );
+  }
+
+  private getOrderItemFromCreateOrderItemDto(orderItemDto: CreateOrderItemDto, order: Orders): OrderItem {
+    const inventory = new Inventory();
+    inventory.stdSku = orderItemDto.stdSku;
+
+    return CreateOrderItemDto.toOrderItem(orderItemDto, order, inventory);
+  }
 }
