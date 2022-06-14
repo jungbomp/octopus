@@ -108,7 +108,7 @@ export class AmazonSPApiService {
       {},
       body,
       queryParam,
-      store,
+      store
     );
   }
 
@@ -204,7 +204,7 @@ export class AmazonSPApiService {
 
   async createFeed(
     store: StoreType,
-    createFeedSpecification: AmazonSPApiCreateFeedSpecification,
+    createFeedSpecification: AmazonSPApiCreateFeedSpecification
   ): Promise<AmazonSPApiCreateFeedResponse> {
     if (!createFeedSpecification.marketplaceIds) {
       createFeedSpecification.marketplaceIds = [this.marketPlaceId];
@@ -219,7 +219,7 @@ export class AmazonSPApiService {
 
   async createFeedDocument(
     store: StoreType,
-    contentType: AmazonSPFeedDocumentContentTypes,
+    contentType: AmazonSPFeedDocumentContentTypes
   ): Promise<AmazonSPApiCreateFeedDocumentResponse> {
     const createFeedDocumentSpecification: AmazonSPApiCreateFeedDocumentSpecification = {
       contentType: this.getContentType(contentType),
@@ -231,7 +231,7 @@ export class AmazonSPApiService {
       {},
       createFeedDocumentSpecification,
       null,
-      store,
+      store
     );
   }
 
@@ -241,7 +241,7 @@ export class AmazonSPApiService {
 
   async updateListingsItemQuantity(
     store: StoreType,
-    listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[],
+    listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[]
   ): Promise<AmazonSPApiCreateFeedResponse | string> {
     const amazonSPApiListingsFeed: AmazonSPApiListingsFeed = {
       header: {
@@ -256,14 +256,14 @@ export class AmazonSPApiService {
       payload: { feedDocumentId, encryptionDetails, url },
     }: AmazonSPApiCreateFeedDocumentResponse = await this.createFeedDocument(
       store,
-      AmazonSPFeedDocumentContentTypes.JSON,
+      AmazonSPFeedDocumentContentTypes.JSON
     );
     const uploadResponse: string = await this.uploadFeedDocument(
       encryptionDetails.key,
       encryptionDetails.initializationVector,
       url,
       JSON.stringify(amazonSPApiListingsFeed),
-      AmazonSPFeedDocumentContentTypes.JSON,
+      AmazonSPFeedDocumentContentTypes.JSON
     );
     if (uploadResponse.length > 0) {
       return uploadResponse;
@@ -275,7 +275,7 @@ export class AmazonSPApiService {
   }
 
   private createListingsFeedMessages(
-    listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[],
+    listingsItemQuantityRequests: AmazonSPApiUpdateListingsItemQuantityRequest[]
   ): AmazonSPApiListingsFeedMessage[] {
     return listingsItemQuantityRequests.map(
       (request: AmazonSPApiUpdateListingsItemQuantityRequest, index: number): AmazonSPApiListingsFeedMessage => ({
@@ -295,13 +295,13 @@ export class AmazonSPApiService {
             ],
           },
         ],
-      }),
+      })
     );
   }
 
   async updateOrderFulfillmentTracking(
     store: StoreType,
-    orderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[],
+    orderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]
   ): Promise<AmazonSPApiCreateFeedResponse | string> {
     const orderFulfillmentFeed: string = this.createPostOrderFulfillmentFeedMessage(store, orderFulfillmentRequests);
 
@@ -309,14 +309,14 @@ export class AmazonSPApiService {
       payload: { feedDocumentId, encryptionDetails, url },
     }: AmazonSPApiCreateFeedDocumentResponse = await this.createFeedDocument(
       store,
-      AmazonSPFeedDocumentContentTypes.XML,
+      AmazonSPFeedDocumentContentTypes.XML
     );
     const uploadResponse: string = await this.uploadFeedDocument(
       encryptionDetails.key,
       encryptionDetails.initializationVector,
       url,
       orderFulfillmentFeed,
-      AmazonSPFeedDocumentContentTypes.XML,
+      AmazonSPFeedDocumentContentTypes.XML
     );
     if (uploadResponse.length > 0) {
       return uploadResponse;
@@ -330,7 +330,7 @@ export class AmazonSPApiService {
 
   private createPostOrderFulfillmentFeedMessage(
     store: StoreType,
-    orderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[],
+    orderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]
   ): string {
     const doc: XMLBuilder = create(
       { version: '1.0', encoding: 'UTF-8' },
@@ -348,17 +348,17 @@ export class AmazonSPApiService {
             (orderFulfillmentRequest: AmazonSPApiUpdateOrderFulfillmentRequest, i: number): any => ({
               MessageID: i + 1,
               ...this.convertOrderFulfillmentMessage(orderFulfillmentRequest),
-            }),
+            })
           ),
         },
-      },
+      }
     );
 
     return doc.end({ prettyPrint: true });
   }
 
   private convertOrderFulfillmentMessage(
-    orderFulfillmentRequest: AmazonSPApiUpdateOrderFulfillmentRequest,
+    orderFulfillmentRequest: AmazonSPApiUpdateOrderFulfillmentRequest
   ): AmazonSPApiOrderFulfillmentFeedMessage {
     return {
       OrderFulfillment: {
@@ -379,7 +379,7 @@ export class AmazonSPApiService {
     iv: string,
     url: string,
     feedDocument: string,
-    contentType: AmazonSPFeedDocumentContentTypes,
+    contentType: AmazonSPFeedDocumentContentTypes
   ): Promise<any> {
     const cipher: Cipher = createCipheriv('aes-256-cbc', Buffer.from(key, 'base64'), Buffer.from(iv, 'base64'));
     const content = Buffer.from(feedDocument);
@@ -407,7 +407,7 @@ export class AmazonSPApiService {
   private async uploadFeedDocumentWithoutEncript(
     url: string,
     feedDocument: string,
-    contentType: AmazonSPFeedDocumentContentTypes,
+    contentType: AmazonSPFeedDocumentContentTypes
   ): Promise<any> {
     try {
       const response = await axios({
@@ -450,7 +450,7 @@ export class AmazonSPApiService {
 
     const getFeedDocumentResponse: AmazonSPApiGetFeedDocumentResponse = await this.getFeedDocument(
       store,
-      getFeedResponse.payload.resultFeedDocumentId,
+      getFeedResponse.payload.resultFeedDocumentId
     );
     if (getFeedDocumentResponse.errors) {
       return getFeedDocumentResponse.errors;
@@ -461,7 +461,7 @@ export class AmazonSPApiService {
       encryptionDetails.key,
       encryptionDetails.initializationVector,
       url,
-      compressionAlgorithm,
+      compressionAlgorithm
     );
 
     return getFeedResponse.payload.feedType === AmazonSPFeedTypes.JSON_LISTINGS_FEED
@@ -473,7 +473,7 @@ export class AmazonSPApiService {
     key: string,
     iv: string,
     url: string,
-    compression?: AmazonSPFeedDocumentCompressionAlgorithm,
+    compression?: AmazonSPFeedDocumentCompressionAlgorithm
   ): Promise<string> {
     try {
       const res = await axios({
@@ -522,7 +522,7 @@ export class AmazonSPApiService {
     queryParam.set('marketplaceIds', this.marketPlaceId);
     queryParam.set(
       'sellerId',
-      store === StoreType.HAB ? this.amazonSPApiConfig.habSellerId : this.amazonSPApiConfig.maSellerId,
+      store === StoreType.HAB ? this.amazonSPApiConfig.habSellerId : this.amazonSPApiConfig.maSellerId
     );
 
     return this.amazonSPApiCall(
@@ -531,7 +531,7 @@ export class AmazonSPApiService {
       {},
       null,
       queryParam,
-      store,
+      store
     );
   }
 
@@ -585,7 +585,7 @@ export class AmazonSPApiService {
     canonicalUri: string,
     query: string,
     canonicalHeaders: CanonicalHeader,
-    payload: any,
+    payload: any
   ): string {
     const payloadString: string = payload ? JSON.stringify(payload) : '';
 
@@ -614,7 +614,7 @@ export class AmazonSPApiService {
   }
 
   private getRoleCredentialsCanonicalHeaderString(
-    roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader,
+    roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader
   ): string {
     return (
       this.roleCredentialsSignedHeaders()
@@ -625,7 +625,7 @@ export class AmazonSPApiService {
 
   private getRoleCredentialsCanonicalRequest(
     query: string,
-    roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader,
+    roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader
   ): string {
     return [
       'POST',
@@ -642,12 +642,12 @@ export class AmazonSPApiService {
     signature: string,
     dateStamp: string,
     service: string,
-    signedHeaders: string[],
+    signedHeaders: string[]
   ): string {
     return `${this.algorithm} Credential=${this.getCredentialString(
       accessKey,
       dateStamp,
-      service,
+      service
     )}, SignedHeaders=${signedHeaders.join(';')}, Signature=${signature}`;
   }
 
@@ -656,7 +656,7 @@ export class AmazonSPApiService {
     const hashedCanonicalRequest = SHA256(canonicalRequest).toString();
 
     return [this.algorithm, requestDate, this.getCredentialScope(dateStamp, service), hashedCanonicalRequest].join(
-      '\n',
+      '\n'
     );
   }
 
@@ -664,7 +664,7 @@ export class AmazonSPApiService {
     secretAccessKey: string,
     canonicalRequest: string,
     requestDate: string,
-    service: string,
+    service: string
   ): string {
     const dateStamp = requestDate.substring(0, 8);
     const message = this.getCanonicalStringForSign(canonicalRequest, requestDate, service);
@@ -738,17 +738,17 @@ export class AmazonSPApiService {
     const query: string = getQueryString(this.roleCredentialsRequestQuery());
     const roleCredentialsCanonicalHeader: RoleCredentialsCanonicalHeader = this.getRoleCredentialsCanonicalHeader(
       query,
-      requestDate,
+      requestDate
     );
     const roleCredentialsCanonicalRequest: string = this.getRoleCredentialsCanonicalRequest(
       query,
-      roleCredentialsCanonicalHeader,
+      roleCredentialsCanonicalHeader
     );
     const signature: string = this.signCanonicalRequest(
       this.awsIamConfig.secretAccessKey,
       roleCredentialsCanonicalRequest,
       requestDate,
-      service,
+      service
     );
 
     try {
@@ -761,7 +761,7 @@ export class AmazonSPApiService {
             signature,
             requestDate.substring(0, 8),
             service,
-            this.roleCredentialsSignedHeaders(),
+            this.roleCredentialsSignedHeaders()
           ),
           'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
           ...roleCredentialsCanonicalHeader,
@@ -798,7 +798,7 @@ export class AmazonSPApiService {
     headers: any,
     data: any,
     queryParams: Map<string, string>,
-    store: StoreType,
+    store: StoreType
   ): Promise<any> {
     const { access_token: accessToken } = await this.authorize(store);
     const { Credentials: credentials } = await this.getArnAssumeRole();
@@ -813,7 +813,7 @@ export class AmazonSPApiService {
       credentials.SecretAccessKey,
       canonicalRequest,
       requestDate,
-      service,
+      service
     );
 
     try {
@@ -826,7 +826,7 @@ export class AmazonSPApiService {
             signature,
             requestDate.substring(0, 8),
             service,
-            this.signedHeaders(),
+            this.signedHeaders()
           ),
           'Content-Type': 'application/json; charset=utf-8',
           'x-amz-security-token': credentials.SessionToken,

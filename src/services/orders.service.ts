@@ -52,14 +52,14 @@ export class OrdersService {
     private readonly logiwaService: LogiwaService,
     private readonly marketsService: MarketsService,
     private readonly usersService: UsersService,
-    private readonly walmartApiService: WalmartApiService,
+    private readonly walmartApiService: WalmartApiService
   ) {}
 
   async findAll(
     includeOrderItems?: boolean,
     marketId?: number,
     orderDateStart?: string,
-    orderDateEnd?: string,
+    orderDateEnd?: string
   ): Promise<Orders[]> {
     const option = {};
 
@@ -81,7 +81,7 @@ export class OrdersService {
             relations: ['orderItems'],
             where: option,
           }
-        : option,
+        : option
     );
   }
 
@@ -102,7 +102,7 @@ export class OrdersService {
             relations: ['orderItems'],
             where: option,
           }
-        : option,
+        : option
     );
   }
 
@@ -125,7 +125,7 @@ export class OrdersService {
   async findUnProcessed(
     orderDateStart?: string,
     orderDateEnd?: string,
-    includeOrderItems?: boolean,
+    includeOrderItems?: boolean
   ): Promise<Orders[]> {
     const orders: Orders[] = await this.findAll(includeOrderItems, undefined, orderDateStart, orderDateEnd);
     return orders.filter((order: Orders): boolean => (order.procDate || '').length === 0);
@@ -134,7 +134,7 @@ export class OrdersService {
   async findNoTrackingNumberUpdated(
     orderDateStart?: string,
     orderDateEnd?: string,
-    includeOrderItems?: boolean,
+    includeOrderItems?: boolean
   ): Promise<Orders[]> {
     const orders: Orders[] = await this.findAll(includeOrderItems, undefined, orderDateStart, orderDateEnd);
     return orders.filter((order: Orders): boolean => (order.trackingNumberUpdateDttm ?? '').length === 0);
@@ -191,7 +191,7 @@ export class OrdersService {
     channelOrderCode: string,
     marketId: number,
     updateDate?: Date,
-    shippingDate?: Date,
+    shippingDate?: Date
   ): Promise<UpdateResult> {
     const criteria = {
       channelOrderCode,
@@ -218,7 +218,7 @@ export class OrdersService {
   async create(createOrderDto: CreateOrderDto): Promise<Orders> {
     const order: Orders = this.getOrderFromCreateOrderDto(createOrderDto);
     const orderItems = createOrderDto.orderItems.map((orderItemDto: CreateOrderItemDto) =>
-      this.getOrderItemFromCreateOrderItemDto(orderItemDto, order),
+      this.getOrderItemFromCreateOrderItemDto(orderItemDto, order)
     );
 
     order.lastModifiedDttm = getCurrentDttm();
@@ -239,8 +239,8 @@ export class OrdersService {
     const orderItems = orders
       .map((order: Orders, i: number) =>
         createOrderDtos[i].orderItems.map((orderItemDto: CreateOrderItemDto) =>
-          this.getOrderItemFromCreateOrderItemDto(orderItemDto, order),
-        ),
+          this.getOrderItemFromCreateOrderItemDto(orderItemDto, order)
+        )
       )
       .reduce((acc, cur) => acc.concat(cur), []);
 
@@ -343,7 +343,7 @@ export class OrdersService {
                 const createOrderItemDto = new CreateOrderItemDto();
                 createOrderItemDto.listingSku = detail.InventoryItemInfo.substring(
                   0,
-                  detail.InventoryItemInfo.indexOf('/'),
+                  detail.InventoryItemInfo.indexOf('/')
                 ).trim();
                 createOrderItemDto.unitPrice = detail.SalesUnitPrice;
                 createOrderItemDto.unitQuantity = detail.PackQuantity;
@@ -354,7 +354,7 @@ export class OrdersService {
                       .then((inventory: Inventory) => inventory?.garmentCost ?? 0)
                   : 0;
                 return createOrderItemDto;
-              }),
+              })
             );
 
             const createOrderDto = new CreateOrderDto();
@@ -365,7 +365,7 @@ export class OrdersService {
               .substring(0, 8);
             createOrderDto.orderQty = logiwaOrder.DetailInfo.reduce(
               (acc: number, cur: any): number => acc + cur.PackQuantity,
-              0,
+              0
             );
             createOrderDto.orderPrice = logiwaOrder.TotalSalesGrossPrice;
             createOrderDto.orderShippingPrice = logiwaOrder.CarrierRate;
@@ -381,7 +381,7 @@ export class OrdersService {
                 }
                 return acc;
               },
-              [],
+              []
             );
 
             if (
@@ -394,7 +394,7 @@ export class OrdersService {
             }
 
             return createOrderDto;
-          }),
+          })
       );
 
       try {
@@ -446,7 +446,7 @@ export class OrdersService {
               trackingNo: order.trackingNo,
               masterChannelOrderCode: order.channelOrderCode,
               masterMarketId: order.market.marketId,
-            }),
+            })
           ),
         ];
       }
@@ -468,7 +468,7 @@ export class OrdersService {
 
     const orders: Orders[] = await this.findByLastModifiedDate(getDttmFromDate(dateStart), getDttmFromDate(dateEnd));
     const filteredOrders: Orders[] = orders.filter(
-      (order: Orders) => (order.trackingNo || '').length > 0 && (order.trackingNumberUpdateDttm || '').length === 0,
+      (order: Orders) => (order.trackingNo || '').length > 0 && (order.trackingNumberUpdateDttm || '').length === 0
     );
 
     this.logger.log(`Starting to update tracking number to each channel with ${filteredOrders.length} orders`);
@@ -510,7 +510,7 @@ export class OrdersService {
         }
       } catch (error) {
         this.logger.log(
-          `Failed to update tracking number - ${channelType}.${storeType} with orderId(${order.channelOrderCode}) and trackingNo(${order.trackingNo})`,
+          `Failed to update tracking number - ${channelType}.${storeType} with orderId(${order.channelOrderCode}) and trackingNo(${order.trackingNo})`
         );
         this.logger.log(error);
       }
@@ -543,10 +543,13 @@ export class OrdersService {
         logiwaShipmentReports
           .filter(
             (shippingReport: any) =>
-              (shippingReport.ChannelOrderCode || '').length > 0 && (shippingReport.Zipcode || '').length > 0,
+              (shippingReport.ChannelOrderCode || '').length > 0 && (shippingReport.Zipcode || '').length > 0
           )
           .map(async (shippingReport: any): Promise<CreateOrderDto> => {
             const [order]: Orders[] = await this.find(shippingReport.ChannelOrderCode, undefined, true);
+            if (!order) {
+              return undefined;
+            }
 
             const createOrderDto = new CreateOrderDto();
             createOrderDto.channelOrderCode = order.channelOrderCode;
@@ -573,17 +576,19 @@ export class OrdersService {
               });
 
             return createOrderDto;
-          }),
+          })
       );
 
       try {
-        const created = await this.createBatch(createOrders);
+        const created = await this.createBatch(
+          createOrders.filter((createOrder: CreateOrderDto) => createOrder !== undefined)
+        );
         this.logger.log(
-          `Page Done ${searchDto.selectedPageIndex}/${logiwaShipmentReports[0].PageCount} with ${created} shipment reports`,
+          `Page Done ${searchDto.selectedPageIndex}/${logiwaShipmentReports[0].PageCount} with ${created} shipment reports`
         );
       } catch {
         this.logger.log(
-          `Failed to update zipcode on page {searchDto.selectedPageIndex}/${logiwaShipmentReports[0].PageCount}`,
+          `Failed to update zipcode on page {searchDto.selectedPageIndex}/${logiwaShipmentReports[0].PageCount}`
         );
       }
 
@@ -595,10 +600,10 @@ export class OrdersService {
 
   private async updateAmazonTrackingNo(
     store: StoreType,
-    updateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[],
+    updateOrderFulfillmentRequests: AmazonSPApiUpdateOrderFulfillmentRequest[]
   ): Promise<void> {
     this.logger.log(
-      `updateAmazonTrackingNo ${store} tracking number with ${updateOrderFulfillmentRequests.length} orders`,
+      `updateAmazonTrackingNo ${store} tracking number with ${updateOrderFulfillmentRequests.length} orders`
     );
     if (updateOrderFulfillmentRequests.length > 0) {
       const createFeedResponse: AmazonSPApiCreateFeedResponse | string =
@@ -612,7 +617,7 @@ export class OrdersService {
             amazonOrderId,
             findMarketId(ChannelType.AMAZON, store),
             curDate,
-            curDate,
+            curDate
           );
         });
       }
@@ -626,7 +631,7 @@ export class OrdersService {
       response.order &&
       response.order.orderLines.orderLine[0].orderLineStatuses.orderLineStatus[0].trackingInfo.shipDateTime
         ? new Date(
-            response.order.orderLines.orderLine[0].orderLineStatuses.orderLineStatus[0].trackingInfo.shipDateTime,
+            response.order.orderLines.orderLine[0].orderLineStatuses.orderLineStatus[0].trackingInfo.shipDateTime
           )
         : getCurrentDate();
     const marketId: number = findMarketId(ChannelType.WALMART, store);
@@ -637,7 +642,7 @@ export class OrdersService {
     store: StoreType,
     channelOrderCode: string,
     trackingNumber: string,
-    overwrite = false,
+    overwrite = false
   ): Promise<void> {
     const order = await this.ebayApiService.getOrder(store, channelOrderCode);
 
@@ -664,7 +669,7 @@ export class OrdersService {
       channelOrderCode,
       findMarketId(ChannelType.EBAY, store),
       curDate,
-      curDate,
+      curDate
     );
   }
 
@@ -703,7 +708,7 @@ export class OrdersService {
       createOrderDto,
       market,
       (createOrderDto.employeeId ?? '').length > 0 ? user : null,
-      (createOrderDto.masterChannelOrderCode ?? '').length > 0 ? masterOrder : null,
+      (createOrderDto.masterChannelOrderCode ?? '').length > 0 ? masterOrder : null
     );
   }
 

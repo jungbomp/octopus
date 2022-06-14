@@ -9,7 +9,12 @@ import { AmazonSPApiGetFeedResponse } from 'src/models/amazonSP/amazonSPApiGetFe
 import { AmazonSPApiOrdersRequest } from 'src/models/amazonSP/amazonSPApiOrdersRequest';
 import { AmazonSPApiService } from 'src/services/amazonSPApi.service';
 import { AmazonSPApiUpdateListingsItemQuantityRequest } from 'src/models/amazonSP/amazonSPApiUpdateListingsItemQuantityRequest';
-import { AmazonSPFeedDocumentContentTypes, AmazonSPFeedTypes, AmazonSPFeedProcessingStatuses, StoreType } from 'src/types';
+import {
+  AmazonSPFeedDocumentContentTypes,
+  AmazonSPFeedTypes,
+  AmazonSPFeedProcessingStatuses,
+  StoreType,
+} from 'src/types';
 import { AmazonSPApiUpdateOrderFulfillmentRequest } from 'src/models/amazonSP/amazonSPApiUpdateOrderFulfillmentRequest';
 
 @Controller('amazon-sp-api/:store')
@@ -27,7 +32,8 @@ export class AmazonSPApiController {
   }
 
   @Get('orders')
-  getOrders(@Param('store') store: StoreType,
+  getOrders(
+    @Param('store') store: StoreType,
     @Query('CreatedAfter') createdAfter?: string,
     @Query('CreatedBefore') createdBefore?: string,
     @Query('LastUpdatedAfter') lastUpdatedAfter?: string,
@@ -41,7 +47,7 @@ export class AmazonSPApiController {
       lastUpdatedAfter,
       lastUpdatedBefore,
       orderStatus,
-      nextToken
+      nextToken,
     };
 
     return this.amazonSPApiService.getOrders(store, ordersRequest);
@@ -53,7 +59,8 @@ export class AmazonSPApiController {
   }
 
   @Get('feeds')
-  getFeeds(@Param('store') store: StoreType,
+  getFeeds(
+    @Param('store') store: StoreType,
     @Query('feedTypes') feedTypes?: AmazonSPFeedTypes,
     @Query('pageSize') pageSize?: string,
     @Query('processingStatuses') processingStatuses?: AmazonSPFeedProcessingStatuses,
@@ -67,7 +74,7 @@ export class AmazonSPApiController {
       processingStatuses,
       createdSince,
       createdUntil,
-      nextToken
+      nextToken,
     };
 
     return this.amazonSPApiService.getFeeds(store, feedsRequest);
@@ -79,12 +86,15 @@ export class AmazonSPApiController {
   }
 
   @Post('feed')
-  createFeed(@Param('store') store: StoreType, @Body() createFeedSpecification: AmazonSPApiCreateFeedSpecification): Promise<AmazonSPApiCreateFeedResponse> {
+  createFeed(
+    @Param('store') store: StoreType,
+    @Body() createFeedSpecification: AmazonSPApiCreateFeedSpecification
+  ): Promise<AmazonSPApiCreateFeedResponse> {
     return this.amazonSPApiService.createFeed(store, createFeedSpecification);
   }
 
   @Delete('feed/:feedId')
-  cancelFeed(@Param('store') store: StoreType, @Param('feedId') feedId: string): Promise<AmazonSPApiError[]|void> {
+  cancelFeed(@Param('store') store: StoreType, @Param('feedId') feedId: string): Promise<AmazonSPApiError[] | void> {
     return this.amazonSPApiService.cancelFeed(store, feedId);
   }
 
@@ -94,22 +104,34 @@ export class AmazonSPApiController {
   }
 
   @Post('feed-document')
-  createFeedDocument(@Param('store') store: StoreType, @Query('contentType') contentType?: AmazonSPFeedDocumentContentTypes): Promise<AmazonSPApiCreateFeedDocumentResponse> {
+  createFeedDocument(
+    @Param('store') store: StoreType,
+    @Query('contentType') contentType?: AmazonSPFeedDocumentContentTypes
+  ): Promise<AmazonSPApiCreateFeedDocumentResponse> {
     return this.amazonSPApiService.createFeedDocument(store, contentType);
   }
 
   @Get('feed-document/:feedDocumentId')
-  getFeedDocument(@Param('store') store: StoreType, @Param('feedDocumentId') feedDocumentId: string): Promise<AmazonSPApiGetFeedDocumentResponse> {
+  getFeedDocument(
+    @Param('store') store: StoreType,
+    @Param('feedDocumentId') feedDocumentId: string
+  ): Promise<AmazonSPApiGetFeedDocumentResponse> {
     return this.amazonSPApiService.getFeedDocument(store, feedDocumentId);
   }
 
   @Put('feed/update-listings-item-quantity')
-  uploadFeedDocument(@Param('store') store: StoreType, @Body() requests: AmazonSPApiUpdateListingsItemQuantityRequest[]): Promise<AmazonSPApiCreateFeedResponse|string> {
+  uploadFeedDocument(
+    @Param('store') store: StoreType,
+    @Body() requests: AmazonSPApiUpdateListingsItemQuantityRequest[]
+  ): Promise<AmazonSPApiCreateFeedResponse | string> {
     return this.amazonSPApiService.updateListingsItemQuantity(store, requests);
   }
 
   @Put('feed/update-order-fulfillment-tracking')
-  updateOrderFulfillmentTracking(@Param('store') store: StoreType, @Body() requests: AmazonSPApiUpdateOrderFulfillmentRequest[]): Promise<AmazonSPApiCreateFeedResponse|string> {
+  updateOrderFulfillmentTracking(
+    @Param('store') store: StoreType,
+    @Body() requests: AmazonSPApiUpdateOrderFulfillmentRequest[]
+  ): Promise<AmazonSPApiCreateFeedResponse | string> {
     return this.amazonSPApiService.updateOrderFulfillmentTracking(store, requests);
   }
 
