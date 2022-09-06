@@ -313,7 +313,7 @@ export class OrdersService {
   }
 
   async loadOrderDataFromLogiwa(searchDto: LogiwaOrderSearchDto): Promise<Orders[]> {
-    this.logger.log('load order data from logiwa');
+    this.logger.log('load order data from logiwa with ', JSON.stringify(searchDto));
     let loadedCnt = 0;
     const startDate: Date = getCurrentDate();
 

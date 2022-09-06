@@ -79,7 +79,7 @@ export class EbayApiService {
 
   async bulkUpdatePriceQuantity(
     store: StoreType,
-    bulkUpdatePriceQuantityDtos: EbayApiBulkUpdatePriceQuantityDto[],
+    bulkUpdatePriceQuantityDtos: EbayApiBulkUpdatePriceQuantityDto[]
   ): Promise<number> {
     const updatePriceQuantityDtos: EbayApiBulkUpdatePriceQuantityDto[] = [...bulkUpdatePriceQuantityDtos];
 
@@ -116,7 +116,7 @@ export class EbayApiService {
       creationDateTo: creationTo,
       lastModifiedDateFrom: lastModifiedFrom,
       lastModifiedDateTo: lastModifiedTo,
-    }: EbayApiGetOrdersDto,
+    }: EbayApiGetOrdersDto
   ): Promise<any> {
     const creationDateFrom: Date =
       creationFrom &&
@@ -147,7 +147,7 @@ export class EbayApiService {
 
     if (lastModifiedDateFrom) {
       filter.push(
-        `lastmodifieddate:[${lastModifiedDateFrom.toISOString()}..${lastModifiedDateTo?.toISOString() ?? ''}]`,
+        `lastmodifieddate:[${lastModifiedDateFrom.toISOString()}..${lastModifiedDateTo?.toISOString() ?? ''}]`
       );
     }
 
@@ -168,7 +168,7 @@ export class EbayApiService {
       `get`,
       {},
       null,
-      store,
+      store
     );
   }
 
@@ -180,7 +180,7 @@ export class EbayApiService {
       trackingNumber,
       shippingCarrierCode,
       shippedDate: shippedDateStr,
-    }: EbayApiCreateShippingFulfillmentDto,
+    }: EbayApiCreateShippingFulfillmentDto
   ): Promise<any> {
     const shippedDate: string =
       shippedDateStr &&
@@ -197,7 +197,7 @@ export class EbayApiService {
       'post',
       {},
       JSON.stringify(data),
-      store,
+      store
     );
   }
 
@@ -208,7 +208,7 @@ export class EbayApiService {
     tsvRow.push('Store\tSKU\tupc\tproductName\tcondition\tquantity');
     items.forEach((item) => {
       tsvRow.push(
-        `${store}\t${item.sku}\t${item.product?.upc}\t${item.product?.title}\t${item.condition}\t${item.availability?.shipToLocationAvailability?.quantity}`,
+        `${store}\t${item.sku}\t${item.product?.upc}\t${item.product?.title}\t${item.condition}\t${item.availability?.shipToLocationAvailability?.quantity}`
       );
     });
 
@@ -297,7 +297,7 @@ export class EbayApiService {
       'get',
       {},
       null,
-      store,
+      store
     );
   }
 
@@ -333,7 +333,7 @@ export class EbayApiService {
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
       Authorization: `Basic ${Buffer.from(`${this.ebayApiConfig.appId}:${this.ebayApiConfig.certId}`).toString(
-        'base64',
+        'base64'
       )}`,
     };
 
@@ -349,7 +349,7 @@ export class EbayApiService {
       headers,
       formBody.join('&'),
       null,
-      false,
+      false
     );
 
     return {
@@ -363,7 +363,7 @@ export class EbayApiService {
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
       Authorization: `Basic ${Buffer.from(`${this.ebayApiConfig.appId}:${this.ebayApiConfig.certId}`).toString(
-        'base64',
+        'base64'
       )}`,
     };
 
@@ -379,7 +379,7 @@ export class EbayApiService {
       headers,
       formBody.join('&'),
       null,
-      false,
+      false
     );
 
     return {
@@ -403,7 +403,7 @@ export class EbayApiService {
       if (new Date(Date.now()) < new Date(this.ebayApiConfig.habRefreshTokenExpires)) {
         this.habToken = await this.refreshAuthToken(this.ebayApiConfig.habRefreshToken);
       } else {
-        // this.habToken = await this.generateAuthToken();
+        this.habToken = await this.generateAuthToken('v^1.1');
       }
 
       return this.habToken;
@@ -428,7 +428,7 @@ export class EbayApiService {
     headers: any,
     data: any,
     store: StoreType,
-    setAccessToken = true,
+    setAccessToken = true
   ): Promise<any> {
     const { access_token } = setAccessToken ? await this.authorize(store) : { access_token: null };
 
@@ -442,7 +442,13 @@ export class EbayApiService {
         ...headers,
       },
       data: data,
-    });
+    })
+      .then((response: any) => {
+        return response;
+      })
+      .catch(({ response }: any) => {
+        return response;
+      });
 
     if (Math.floor(res.status / 10) !== 20) {
       throw new Error(res.statusText);

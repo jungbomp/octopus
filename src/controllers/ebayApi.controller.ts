@@ -6,6 +6,7 @@ import { EbayApiBulkUpdatePriceQuantityDto } from 'src/models/dto/ebayApiBulkUpd
 import { EbayApiCreateShippingFulfillmentDto } from 'src/models/dto/ebayApiCreateShippingFulfillment.dto';
 import { StoreType } from 'src/types';
 import { getCurrentDttm } from 'src/utils/dateTime.util';
+import internal from 'stream';
 
 @Controller('ebay-api/:store')
 export class EbayApiController {
@@ -13,12 +14,16 @@ export class EbayApiController {
 
   @Get('inventory-item/:sku')
   getInventoryItem(@Param('store') store: StoreType, @Param('sku') sku: string): Promise<any> {
-    return this.ebayApiService.getInventoryItem(store, sku)
+    return this.ebayApiService.getInventoryItem(store, sku);
   }
 
   @Get('inventory-items')
-  getInventoryItems(@Param('store') store: StoreType, @Query('limit') limit: string, @Query('offset') offset: string): Promise<any> {
-    return this.ebayApiService.getInventoryItems(store, limit && Number(limit), offset && Number(offset))
+  getInventoryItems(
+    @Param('store') store: StoreType,
+    @Query('limit') limit: string,
+    @Query('offset') offset: string
+  ): Promise<any> {
+    return this.ebayApiService.getInventoryItems(store, limit && Number(limit), offset && Number(offset));
   }
 
   @Get('export-all-inventory-items')
@@ -26,7 +31,7 @@ export class EbayApiController {
   exportAllInventoryItems(@Param('store') store: StoreType, @Res() res: Response): Promise<void> {
     const tsvFileName = `ebay_inventory_items_${store}_${getCurrentDttm()}.tsv`;
     res.setHeader('Content-Disposition', `attachment; filename=${tsvFileName}`);
-    this.ebayApiService.exportAllInventoryItems(store).then(readable => readable.pipe(res));
+    this.ebayApiService.exportAllInventoryItems(store).then((readable: internal.Readable) => readable.pipe(res));
     return;
   }
 
@@ -41,7 +46,10 @@ export class EbayApiController {
   }
 
   @Post('bulk-update-price-quantity')
-  bulkUpdatePriceQuantity(@Param('store') store: StoreType, @Body() bulkUpdatePriceQuantityDtos: EbayApiBulkUpdatePriceQuantityDto[]): Promise<any> {
+  bulkUpdatePriceQuantity(
+    @Param('store') store: StoreType,
+    @Body() bulkUpdatePriceQuantityDtos: EbayApiBulkUpdatePriceQuantityDto[]
+  ): Promise<any> {
     return this.ebayApiService.bulkUpdatePriceQuantity(store, bulkUpdatePriceQuantityDtos);
   }
 
@@ -51,7 +59,10 @@ export class EbayApiController {
   }
 
   @Post('shipping-fulfillment')
-  createShippingFulfillment(@Param('store') store: StoreType, @Body() ebayApiCreateShippingFulfillmentDto: EbayApiCreateShippingFulfillmentDto): Promise<any> {
+  createShippingFulfillment(
+    @Param('store') store: StoreType,
+    @Body() ebayApiCreateShippingFulfillmentDto: EbayApiCreateShippingFulfillmentDto
+  ): Promise<any> {
     return this.ebayApiService.createShippingFulfillment(store, ebayApiCreateShippingFulfillmentDto);
   }
 
