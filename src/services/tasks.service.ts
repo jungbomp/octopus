@@ -28,7 +28,7 @@ export class TasksService {
     private readonly listingsService: ListingsService,
     private readonly logiwaService: LogiwaService,
     private readonly ordersService: OrdersService,
-    private readonly productBundlesService: ProductBundlesService,
+    private readonly productBundlesService: ProductBundlesService
   ) {}
 
   @Cron('0 5 1 * * 1')
@@ -86,13 +86,13 @@ export class TasksService {
               const orderDateStart = orders.reduce(
                 (orderDate: string, order: Orders): string =>
                   orderDate.localeCompare(order.orderDate) < 0 ? orderDate : order.orderDate,
-                firstOrder.orderDate,
+                firstOrder.orderDate
               );
 
               const orderDateEnd = orders.reduce(
                 (orderDate: string, order: Orders) =>
                   orderDate.localeCompare(order.orderDate) < 0 ? order.orderDate : orderDate,
-                firstOrder.orderDate,
+                firstOrder.orderDate
               );
               this.ordersService.updateZipCode({
                 orderDateStart: `${orderDateStart}000000`,

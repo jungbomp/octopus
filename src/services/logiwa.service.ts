@@ -174,19 +174,19 @@ export class LogiwaService {
 
     if (logiwaInventoryItemSearchDto.lastModifiedDate) {
       body['LastModifiedDate'] = toLogiwaDateFormat(
-        toDateFromDateString(logiwaInventoryItemSearchDto.lastModifiedDate),
+        toDateFromDateString(logiwaInventoryItemSearchDto.lastModifiedDate)
       );
     }
 
     if (logiwaInventoryItemSearchDto.lastModifiedDateStart) {
       body['LastModifiedDate_Start'] = toLogiwaDateFormat(
-        toDateFromDateString(logiwaInventoryItemSearchDto.lastModifiedDateStart),
+        toDateFromDateString(logiwaInventoryItemSearchDto.lastModifiedDateStart)
       );
     }
 
     if (logiwaInventoryItemSearchDto.lastModifiedDateEnd) {
       body['LastModifiedDate_End'] = toLogiwaDateFormat(
-        toDateFromDateString(logiwaInventoryItemSearchDto.lastModifiedDateEnd),
+        toDateFromDateString(logiwaInventoryItemSearchDto.lastModifiedDateEnd)
       );
     }
 
@@ -206,7 +206,7 @@ export class LogiwaService {
   }
 
   async availableToPromiseReportSearch(
-    logiwaAvailableToPromiseReportSearchDto: LogiwaAvailableToPromiseReportSearchDto,
+    logiwaAvailableToPromiseReportSearchDto: LogiwaAvailableToPromiseReportSearchDto
   ): Promise<any> {
     const body = {
       Code: logiwaAvailableToPromiseReportSearchDto.code,
@@ -220,7 +220,7 @@ export class LogiwaService {
   }
 
   async inventoryItemItemChannelIDsSearch(
-    logiwaItemChannelListingSearchDto: LogiwaItemChannelListingSearchDto,
+    logiwaItemChannelListingSearchDto: LogiwaItemChannelListingSearchDto
   ): Promise<any> {
     const body = {
       DepositorID: this.logiwaApiConfig.depositorId,
@@ -292,7 +292,7 @@ export class LogiwaService {
 
     const { Success, SuccessMessage } = await this.logiwaApiCall(
       `${this.logiwaApiConfig.apiBaseUrl}/WarehouseReceiptBulkInsert`,
-      body,
+      body
     );
     return { Success, SuccessMessage };
   }
@@ -353,8 +353,6 @@ export class LogiwaService {
         : null,
       OrderDate_End: searchDto.orderDateEnd ? toLogiwaDateFormat(toDateFromDateString(searchDto.orderDateEnd)) : null,
     };
-
-    console.log('warehouseOrderShipmentInfoSearch');
 
     return this.logiwaApiCall(`${this.logiwaApiConfig.apiBaseUrl}/WarehouseOrderShipmentInfoSearch`, body);
   }
@@ -418,7 +416,7 @@ export class LogiwaService {
     let list = [];
     while (true) {
       const { Data: availableToPromiseReport } = await this.availableToPromiseReportSearch(
-        logiwaAvailableToPromiseReportSearchDto,
+        logiwaAvailableToPromiseReportSearchDto
       );
       if ((availableToPromiseReport ?? []).length < 1) {
         break;
@@ -452,7 +450,7 @@ export class LogiwaService {
       logiwaItems.forEach((item: any) => bodies.push([item.Code.toUpperCase(), item.ID]));
 
       this.logger.log(
-        `Page Done ${logiwaInventoryItemSearchDto.selectedPageIndex}/${logiwaItems[0].PageCount} with ${logiwaItems.length} inventory records`,
+        `Page Done ${logiwaInventoryItemSearchDto.selectedPageIndex}/${logiwaItems[0].PageCount} with ${logiwaItems.length} inventory records`
       );
 
       if (logiwaInventoryItemSearchDto.selectedPageIndex === logiwaItems[0].PageCount) {
@@ -489,7 +487,7 @@ export class LogiwaService {
 
       while (true) {
         const { Data: logiwaListings } = await this.inventoryItemItemChannelIDsSearch(
-          logiwaItemChannelListingSearchDto,
+          logiwaItemChannelListingSearchDto
         );
         if ((logiwaListings ?? []).length < 1) {
           break;
@@ -504,11 +502,11 @@ export class LogiwaService {
             item.InventoryItemID,
             item.ChannelItemNumber,
             item.SellerSKU,
-          ]),
+          ])
         );
 
         this.logger.log(
-          `Load ${channelIds[i]} ${logiwaItemChannelListingSearchDto.selectedPageIndex}/${logiwaListings[0].PageCount} with ${logiwaListings.length} item records`,
+          `Load ${channelIds[i]} ${logiwaItemChannelListingSearchDto.selectedPageIndex}/${logiwaListings[0].PageCount} with ${logiwaListings.length} item records`
         );
 
         if (logiwaItemChannelListingSearchDto.selectedPageIndex === logiwaListings[0].PageCount) {
@@ -524,13 +522,76 @@ export class LogiwaService {
     return Readable.from(buffer);
   }
 
+  async exportLogiwaShipmentReportTSV(pageIndex?: number): Promise<Readable> {
+    const headers: string[] = [
+      'ID',
+      'WarehouseOrderID',
+      'WarehouseOrderCode',
+      'ShipmentDateTime',
+      'PackQuantity',
+      'ShipmentMethod',
+      'InventoryItemID',
+      'InventoryItemDescription',
+      'CustomerID',
+      'CustomerDescription',
+      'CustomerAddressID',
+      'CustomerAddressDescription',
+      'CustomerEmailAddress',
+      'CarrierDescription',
+      'ChannelOrderCode',
+      'CarrierTrackingNumber',
+      'CarrierRate',
+      'CarrierMarkupRate',
+      'OrderDate',
+      'OrderDate_Start',
+      'OrderDate_End',
+      'CustomerOrderNo',
+      'ChannelID',
+      'ChannelDescription',
+      'StoreName',
+      'Country',
+      'State',
+      'City',
+      'Zipcode',
+      'AddressLine2',
+      'ItemCode',
+      'ItemDescription',
+    ];
+    const bodies: string[][] = [];
+
+    const searchDto: LogiwaShipmentReportSearchDto = { selectedPageIndex: pageIndex ?? 1 };
+
+    while (true) {
+      const { Data: logiwaShipmentReports } = await this.shipmentReportAllSearch(searchDto);
+      if ((logiwaShipmentReports ?? []).length < 1) {
+        break;
+      }
+
+      logiwaShipmentReports.forEach((item: any) => bodies.push(headers.map((key: string): string => item[key])));
+
+      this.logger.log(
+        `Load ${searchDto.selectedPageIndex}/${logiwaShipmentReports[0].PageCount} with ${logiwaShipmentReports.length} item records`
+      );
+
+      if (searchDto.selectedPageIndex === logiwaShipmentReports[0].PageCount) {
+        break;
+      }
+
+      searchDto.selectedPageIndex = searchDto.selectedPageIndex + 1;
+    }
+
+    const tsvRows = [headers.join('\t'), ...bodies.map((body: string[]): string => body.join('\t'))];
+    const buffer = Buffer.from(tsvRows.join('\n'), 'utf8');
+    return Readable.from(buffer);
+  }
+
   private async updateInventoryItemMapJson(inventoryItemId: string, logiwaItem?: any): Promise<void> {
     const {
       Data: [inventoryItem],
     } = logiwaItem ? { Data: [logiwaItem] } : await this.inventoryItemSearch({ id: Number(inventoryItemId) });
     if (inventoryItem) {
       const inventoryItemPackTypeId: number = await this.inventoryItemPackTypeSearch(inventoryItemId).then(
-        ({ Data: [inventoryItemPackType] }) => inventoryItemPackType.ID,
+        ({ Data: [inventoryItemPackType] }) => inventoryItemPackType.ID
       );
       const inventoryItemPackType: any = await this.inventoryItemPackTypeGet(`${inventoryItemPackTypeId}`);
       this.inventoryItemIdMap[inventoryItemId] = {

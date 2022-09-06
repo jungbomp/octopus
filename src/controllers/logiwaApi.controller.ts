@@ -97,4 +97,15 @@ export class LogiwaApiController {
       .then((readable: Readable) => readable.pipe(res));
     return;
   }
+
+  @Get('export-shipment-report-all-search/:pageIndex?')
+  @Header('Content-type', 'text/tsv')
+  exportLogiwaShipmentReportAllSearchTSV(@Res() res: Response, @Param('pageIndex') pageIndex: string): Promise<void> {
+    const responseFileName = `logiwa_shipment_report_all_search_${getCurrentDttm()}.tsv`;
+    res.setHeader('Content-Disposition', `attachment; filename=${responseFileName}`);
+    this.logiwaService
+      .exportLogiwaShipmentReportTSV(pageIndex && Number(pageIndex))
+      .then((readable: Readable) => readable.pipe(res));
+    return;
+  }
 }
