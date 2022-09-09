@@ -40,8 +40,23 @@ export class Orders {
   @Column({ type: 'varchar', length: 45, nullable: true })
   trackingNo: string;
 
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  customerName: string;
+
   @Column({ type: 'varchar', length: 10, nullable: true })
   zipcode: string;
+
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  country: string;
+
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  state: string;
+
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  city: string;
+
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  addressLine: string;
 
   @ManyToOne(() => User, (user) => user.employeeId, {
     nullable: true,

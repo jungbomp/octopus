@@ -16,6 +16,11 @@ export class CreateOrderDto {
   employeeId: string;
   orderItems: CreateOrderItemDto[];
   zipcode?: string;
+  customerName?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  addressLine?: string;
   masterChannelOrderCode?: string;
   masterMarketId?: number;
   trackingNumberUpdateDttm?: string;

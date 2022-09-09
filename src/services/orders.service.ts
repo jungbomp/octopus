@@ -560,6 +560,15 @@ export class OrdersService {
             createOrderDto.orderShippingPrice = order.orderShippingPrice;
             createOrderDto.trackingNo = order.trackingNo;
             createOrderDto.zipcode = shippingReport.Zipcode;
+            createOrderDto.customerName = shippingReport.CustomerDescription;
+            createOrderDto.country = shippingReport.Country;
+            createOrderDto.state = shippingReport.State;
+            createOrderDto.city = shippingReport.City;
+            createOrderDto.addressLine = [shippingReport.AddressLine2 ?? '', shippingReport.CustomerAddressDescription]
+              .join(' ')
+              .trim();
+            createOrderDto.zipcode = shippingReport.Zipcode;
+            createOrderDto.orderShippingPrice = Number(shippingReport.CarrierRate);
             createOrderDto.orderItems = order.orderItems
               .filter((orderItem: OrderItem) => orderItem.inventory?.stdSku !== undefined)
               .map((orderItem: OrderItem) => {
