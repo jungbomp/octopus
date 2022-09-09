@@ -41,7 +41,7 @@ export class LogiwaApiController {
 
   @Post('available-to-promise-report-search')
   availableToPromiseReportSearch(
-    @Body() logiwaAvailableToPromiseReportSearchDto: LogiwaAvailableToPromiseReportSearchDto,
+    @Body() logiwaAvailableToPromiseReportSearchDto: LogiwaAvailableToPromiseReportSearchDto
   ): Promise<any> {
     return this.logiwaService.availableToPromiseReportSearch(logiwaAvailableToPromiseReportSearchDto);
   }
@@ -53,7 +53,7 @@ export class LogiwaApiController {
 
   @Post('inventory-item-item-channel-ids-search')
   logiwaInventoryItemItemChannelIDsSearch(
-    @Body() logiwaItemChannelListingSearchDto: LogiwaItemChannelListingSearchDto,
+    @Body() logiwaItemChannelListingSearchDto: LogiwaItemChannelListingSearchDto
   ): Promise<any> {
     return this.logiwaService.inventoryItemItemChannelIDsSearch(logiwaItemChannelListingSearchDto);
   }

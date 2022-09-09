@@ -1,3 +1,3 @@
 import { ENVIRONMENT, ENV } from 'src/constants';
 
-export const config = { [ENVIRONMENT]: ENV.PRODUCTION };
+export const config = { [ENVIRONMENT]: ENV.DEVELOPMENT };

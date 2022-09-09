@@ -25,7 +25,7 @@ export class InventoriesService {
     private readonly inventorysRepository: Repository<Inventory>,
     private readonly productsService: ProductsService,
     private readonly stdSizesService: StdSizesService,
-    private readonly logiwaService: LogiwaService,
+    private readonly logiwaService: LogiwaService
   ) {}
 
   async create(createInventoryDto: CreateInventoryDto): Promise<Inventory> {
@@ -90,8 +90,8 @@ export class InventoriesService {
         availableReportList.reduce(
           (acc: Map<string, number>, availableReport: any): Map<string, number> =>
             acc.set(availableReport.Code, availableReport.StockQuantity - availableReport.OrderQuantity),
-          new Map<string, number>(),
-        ),
+          new Map<string, number>()
+        )
       );
 
     const stdSizeMap: Map<string, StdSize> = await this.stdSizesService
@@ -100,8 +100,8 @@ export class InventoriesService {
         (stdSizes: StdSize[]): Map<string, StdSize> =>
           stdSizes.reduce(
             (acc: Map<string, StdSize>, stdSize: StdSize): Map<string, StdSize> => acc.set(stdSize.sizeName, stdSize),
-            new Map<string, StdSize>(),
-          ),
+            new Map<string, StdSize>()
+          )
       );
 
     const productMap: Map<string, Product> = await this.productsService
@@ -111,8 +111,8 @@ export class InventoriesService {
           products.reduce(
             (acc: Map<string, Product>, product: Product): Map<string, Product> =>
               acc.set(product.productCode, product),
-            new Map<string, Product>(),
-          ),
+            new Map<string, Product>()
+          )
       );
 
     logiwaInventoryItemSearchDto.selectedPageIndex = logiwaInventoryItemSearchDto.selectedPageIndex ?? 1;
@@ -133,11 +133,11 @@ export class InventoriesService {
 
         const inventoryItemPackTypeId = await this.logiwaService.getLogiwaInventoryItemPackTypeId(
           logiwaItem.ID,
-          logiwaItem,
+          logiwaItem
         );
         const inventoryItemPackType = await this.logiwaService.getLogiwaInventoryItemPackType(
           logiwaItem.ID,
-          `${inventoryItemPackTypeId}`,
+          `${inventoryItemPackTypeId}`
         );
 
         const createInventoryDto = new CreateInventoryDto();
@@ -155,7 +155,7 @@ export class InventoriesService {
         createInventoryDto.safetyStockQty = Number(logiwaItem.SafetyStockCu ?? 0);
         createInventoryDto.sizeCode = stdSizeMap.get(logiwaItem.Size)?.sizeCode;
         createInventoryDto.productCode = productMap.get(
-          logiwaItem.Code.substring(0, logiwaItem.Code.indexOf('-')).toUpperCase(),
+          logiwaItem.Code.substring(0, logiwaItem.Code.indexOf('-')).toUpperCase()
         )?.productCode;
 
         createInventories.push(createInventoryDto);
@@ -164,13 +164,13 @@ export class InventoriesService {
       try {
         const inventories = await this.createBatch(createInventories);
         this.logger.log(
-          `Page Done ${logiwaInventoryItemSearchDto.selectedPageIndex}/${logiwaItems[0].PageCount} with ${inventories.length} inventory records`,
+          `Page Done ${logiwaInventoryItemSearchDto.selectedPageIndex}/${logiwaItems[0].PageCount} with ${inventories.length} inventory records`
         );
       } catch (error) {
         this.logger.log(
           `Failed to store inventory data on page ${logiwaInventoryItemSearchDto.selectedPageIndex}/${
             logiwaItems[0]?.PageCount ?? 0
-          }`,
+          }`
         );
         this.logger.log(error);
       }
@@ -190,9 +190,9 @@ export class InventoriesService {
       ...new Set(
         orders
           .map((order: Orders): string[] =>
-            order.orderItems.map((orderItem: OrderItem): string => orderItem.inventory.stdSku),
+            order.orderItems.map((orderItem: OrderItem): string => orderItem.inventory.stdSku)
           )
-          .flat(1),
+          .flat(1)
       ),
     ];
 
@@ -202,8 +202,8 @@ export class InventoriesService {
         availableReportList.reduce(
           (acc: Map<string, number>, availableReport: any): Map<string, number> =>
             acc.set(availableReport.Code, availableReport.StockQuantity - availableReport.OrderQuantity),
-          new Map<string, number>(),
-        ),
+          new Map<string, number>()
+        )
       );
 
     const stdSizeMap: Map<string, StdSize> = await this.stdSizesService
@@ -212,8 +212,8 @@ export class InventoriesService {
         (stdSizes: StdSize[]): Map<string, StdSize> =>
           stdSizes.reduce(
             (acc: Map<string, StdSize>, stdSize: StdSize): Map<string, StdSize> => acc.set(stdSize.sizeName, stdSize),
-            new Map<string, StdSize>(),
-          ),
+            new Map<string, StdSize>()
+          )
       );
 
     const productMap: Map<string, Product> = await this.productsService
@@ -223,8 +223,8 @@ export class InventoriesService {
           products.reduce(
             (acc: Map<string, Product>, product: Product): Map<string, Product> =>
               acc.set(product.productCode, product),
-            new Map<string, Product>(),
-          ),
+            new Map<string, Product>()
+          )
       );
 
     for (let i = 0; i < stdSkuList.length; i++) {
@@ -237,11 +237,11 @@ export class InventoriesService {
 
       const inventoryItemPackTypeId = await this.logiwaService.getLogiwaInventoryItemPackTypeId(
         logiwaItem.ID,
-        logiwaItem,
+        logiwaItem
       );
       const inventoryItemPackType = await this.logiwaService.getLogiwaInventoryItemPackType(
         logiwaItem.ID,
-        `${inventoryItemPackTypeId}`,
+        `${inventoryItemPackTypeId}`
       );
 
       const createInventoryDto = new CreateInventoryDto();
@@ -258,7 +258,7 @@ export class InventoriesService {
       createInventoryDto.productHeight = inventoryItemPackType?.Height;
       createInventoryDto.sizeCode = stdSizeMap.get(logiwaItem.Size)?.sizeCode;
       createInventoryDto.productCode = productMap.get(
-        logiwaItem.Code.substring(0, logiwaItem.Code.indexOf('-')),
+        logiwaItem.Code.substring(0, logiwaItem.Code.indexOf('-'))
       )?.productCode;
 
       try {
