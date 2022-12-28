@@ -11,7 +11,7 @@ import { OrdersService } from './orders.service';
 import { ProductBundlesService } from './productBundles.service';
 
 import { LogiwaOrderSearchDto } from '../models/dto/logiwaOrderSearch.dto';
-import { Orders } from '../models/orders.entity';
+// import { Orders } from '../models/orders.entity';
 
 import { getCurrentDate, getDttmFromDate, subtractDate } from '../utils/dateTime.util';
 import { ENV, ENVIRONMENT } from 'src/constants';
@@ -43,12 +43,12 @@ export class TasksService {
   loadInventoryFromLogiwa(): void {
     if (this.configService.get<string>(ENVIRONMENT) === ENV.PRODUCTION) {
       this.logger.log(`triggered loadInventoryFromLogiwa`);
-      this.inventoriesService
-        .loadInventoryDataFromLogiwa({})
-        .then(() => this.listingsService.loadListingDataFromLogiwa({}))
-        .then(() => this.interchangeableGroupsService.updateInterchangeableQuantities())
-        .then(() => this.listingsService.updateAllAvailableQuantityToChannel())
-        .then(() => this.productBundlesService.updateAllProductBundleQuantity());
+      // this.inventoriesService
+      //   .loadInventoryDataFromLogiwa({})
+      //   .then(() => this.listingsService.loadListingDataFromLogiwa({}))
+      //   .then(() => this.interchangeableGroupsService.updateInterchangeableQuantities())
+      //   .then(() => this.listingsService.updateAllAvailableQuantityToChannel())
+      //   .then(() => this.productBundlesService.updateAllProductBundleQuantity());
     }
   }
 
@@ -56,7 +56,7 @@ export class TasksService {
   loadInventoryItemPackTypeFromLogiwa(): void {
     if (this.configService.get<string>(ENVIRONMENT) === ENV.PRODUCTION) {
       this.logger.log(`triggered loadInventoryItemPackTypeFromLogiwa`);
-      this.logiwaService.loadInventoryItemPackType();
+      // this.logiwaService.loadInventoryItemPackType();
     }
   }
 
@@ -66,41 +66,41 @@ export class TasksService {
       this.logger.log(`triggered updateListingQuantity`);
       const currentDate = getCurrentDate();
       const threeHoursBefore = subtractDate(currentDate, 0, 4, 0, 0);
-      const oneDayBefore = subtractDate(currentDate, 1, 0, 0, 0);
+      // const oneDayBefore = subtractDate(currentDate, 1, 0, 0, 0);
 
       const logiwaOrderSearchDto = new LogiwaOrderSearchDto(0);
       logiwaOrderSearchDto.lastModifiedDateStart = getDttmFromDate(threeHoursBefore);
       logiwaOrderSearchDto.lastModifiedDateEnd = getDttmFromDate(currentDate);
 
-      this.ordersService.loadOrderDataFromLogiwa(logiwaOrderSearchDto).then((orders: Orders[]) => {
-        this.ordersService.updateTrackingToChannel(oneDayBefore, getCurrentDate());
-        this.inventoriesService
-          .loadInventoryDataFromLogiwaByOrderedItem(orders)
-          .then(() => this.interchangeableGroupsService.updateInterchangeableQuantities())
-          .then(() => this.productBundlesService.updateAllProductBundleQuantity())
-          .then(() => this.listingsService.updateQuantityToChannelForOrdered(orders))
-          .then(() => {
-            if (orders.length > 0) {
-              const [firstOrder] = orders;
+      // this.ordersService.loadOrderDataFromLogiwa(logiwaOrderSearchDto).then((orders: Orders[]) => {
+      //   this.ordersService.updateTrackingToChannel(oneDayBefore, getCurrentDate());
+      //   this.inventoriesService
+      //     .loadInventoryDataFromLogiwaByOrderedItem(orders)
+      //     .then(() => this.interchangeableGroupsService.updateInterchangeableQuantities())
+      //     .then(() => this.productBundlesService.updateAllProductBundleQuantity())
+      //     .then(() => this.listingsService.updateQuantityToChannelForOrdered(orders))
+      //     .then(() => {
+      //       if (orders.length > 0) {
+      //         const [firstOrder] = orders;
 
-              const orderDateStart = orders.reduce(
-                (orderDate: string, order: Orders): string =>
-                  orderDate.localeCompare(order.orderDate) < 0 ? orderDate : order.orderDate,
-                firstOrder.orderDate
-              );
+      //         const orderDateStart = orders.reduce(
+      //           (orderDate: string, order: Orders): string =>
+      //             orderDate.localeCompare(order.orderDate) < 0 ? orderDate : order.orderDate,
+      //           firstOrder.orderDate
+      //         );
 
-              const orderDateEnd = orders.reduce(
-                (orderDate: string, order: Orders) =>
-                  orderDate.localeCompare(order.orderDate) < 0 ? order.orderDate : orderDate,
-                firstOrder.orderDate
-              );
-              this.ordersService.updateZipCode({
-                orderDateStart: `${orderDateStart}000000`,
-                orderDateEnd: `${orderDateEnd}235959`,
-              });
-            }
-          });
-      });
+      //         const orderDateEnd = orders.reduce(
+      //           (orderDate: string, order: Orders) =>
+      //             orderDate.localeCompare(order.orderDate) < 0 ? order.orderDate : orderDate,
+      //           firstOrder.orderDate
+      //         );
+      //         this.ordersService.updateZipCode({
+      //           orderDateStart: `${orderDateStart}000000`,
+      //           orderDateEnd: `${orderDateEnd}235959`,
+      //         });
+      //       }
+      //     });
+      // });
     }
   }
 
